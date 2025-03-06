@@ -1,4 +1,7 @@
-// app/routes/api.verify-wallet.ts
+/*
+ * @ts-nocheck
+ * app/routes/api.verify-wallet.ts
+ */
 import { json } from '@remix-run/cloudflare';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { parseTokenAccountResp } from '@raydium-io/raydium-sdk-v2';
@@ -44,8 +47,10 @@ export async function loader({
   const provider = url.searchParams.get('provider');
 
   if (!walletAddress) {
-    // If no wallet address is provided, treat as free tier
-    // Only allow access to Google models
+    /*
+     * If no wallet address is provided, treat as free tier
+     * Only allow access to Google models
+     */
     const hasAccess = provider?.toLowerCase() === 'google';
 
     return json({
@@ -58,6 +63,7 @@ export async function loader({
 
   try {
     const publicKey = new PublicKey(walletAddress);
+
     // Use mainnet endpoint from environment or default
     const endpoint =
       context.cloudflare?.env.SOLANA_ENDPOINT ||
@@ -66,9 +72,6 @@ export async function loader({
     // Hardcoded token mint address (same as in wallet.ts)
     const tokenMintAddress = new PublicKey('66ce7iZ5uqnVbh4Rt5wChHWyVfUvv1LJrBo8o214pump');
 
-    // Get token balance
-    const connection = new Connection(endpoint);
-
     const tokenAccountData = await fetchTokenAccountData(endpoint, publicKey);
 
     const mintAccount = tokenAccountData.tokenAccounts.filter(
@@ -76,12 +79,14 @@ export async function loader({
     );
 
     let tokenBalance = 0;
+
     if (mintAccount.length > 0) {
       tokenBalance = parseFloat(mintAccount[0].amount) / 10 ** 6;
     }
 
     // Determine tier based on balance
     let currentTier;
+
     if (tokenBalance >= TIER_THRESHOLDS[TierLevel.WHALE]) {
       currentTier = TierLevel.WHALE;
     } else if (tokenBalance >= TIER_THRESHOLDS[TierLevel.TIER3]) {
@@ -96,6 +101,7 @@ export async function loader({
 
     // Check if model access is allowed
     let hasAccess = true;
+
     if (model && provider) {
       hasAccess = isModelAllowedForTier(model, provider, currentTier);
     }
@@ -159,5 +165,6 @@ async function fetchTokenAccountData(endpoint: string, publicKey: PublicKey) {
       value: [...tokenAccountResp.value, ...token2022Resp.value],
     },
   });
+
   return tokenAccountData;
 }

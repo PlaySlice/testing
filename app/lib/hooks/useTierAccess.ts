@@ -1,6 +1,6 @@
-import { useEffect, useMemo } from 'react';
 import { useStore } from '@nanostores/react';
-import { walletStore } from '../stores/wallet';
+import { useMemo } from 'react';
+import { walletStore } from '~/lib/stores/wallet';
 
 export enum TierLevel {
   FREE = 'free',

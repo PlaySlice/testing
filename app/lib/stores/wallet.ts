@@ -1,9 +1,9 @@
+import { parseTokenAccountResp } from '@raydium-io/raydium-sdk-v2';
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { Connection, PublicKey } from '@solana/web3.js';
 import { atom } from 'nanostores';
-import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { toast } from 'react-toastify';
 import { logStore } from './logs';
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
-import { parseTokenAccountResp } from '@raydium-io/raydium-sdk-v2';
 
 interface WalletState {
   balance: string;
@@ -44,7 +44,7 @@ export const fetchWalletBalance = async (
     const response = await fetchTokenAccountData(endpoint, publicKey);
 
     // Default balance to 0
-    let mintAccount = response.tokenAccounts.filter(
+    const mintAccount = response.tokenAccounts.filter(
       (tokenAccount) => tokenAccount.mint.toBase58() === tokenMintAddress.toBase58(),
     );
 
@@ -53,7 +53,9 @@ export const fetchWalletBalance = async (
     if (mintAccount.length > 0) {
       tokenBalance = (parseFloat(mintAccount[0].amount) / 10 ** 6).toString();
     }
+
     console.log('tokenBalance', tokenBalance);
+
     // Update the store with the new balance
     walletStore.set({
       balance: tokenBalance,
@@ -95,5 +97,6 @@ export async function fetchTokenAccountData(endpoint: string, publicKey: PublicK
       value: [...tokenAccountResp.value, ...token2022Resp.value],
     },
   });
+
   return tokenAccountData;
 }
