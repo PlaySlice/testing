@@ -200,6 +200,9 @@ importers:
       ai:
         specifier: ^4.1.2
         version: 4.1.34(react@18.3.1)(zod@3.24.1)
+      buffer:
+        specifier: ^6.0.3
+        version: 6.0.3
       chalk:
         specifier: ^5.4.1
         version: 5.4.1
