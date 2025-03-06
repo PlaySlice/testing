@@ -132,6 +132,14 @@ export default defineConfig((config) => {
           process: true,
           global: true,
         },
+        overrides: {
+          // Force using polyfills even if native modules are available
+          crypto: 'vite-plugin-node-polyfills/polyfills/crypto',
+          stream: 'vite-plugin-node-polyfills/polyfills/stream',
+          http: 'vite-plugin-node-polyfills/polyfills/http',
+          https: 'vite-plugin-node-polyfills/polyfills/https',
+          zlib: 'vite-plugin-node-polyfills/polyfills/zlib',
+        },
         protocolImports: true,
         // Exclude Node.js modules that shouldn't be polyfilled in Cloudflare
         exclude: ['child_process', 'fs', 'path'],
@@ -142,6 +150,56 @@ export default defineConfig((config) => {
           if (id.includes('env.mjs')) {
             return {
               code: `import { Buffer } from 'buffer';\n${code}`,
+              map: null,
+            };
+          }
+        },
+      },
+      {
+        name: 'node-modules-polyfill-injector',
+        transform(code, id) {
+          // Check for files that might be using Node.js built-in modules
+          if (
+            id.includes('@toruslabs/eccrypto') ||
+            id.includes('cipher-base') ||
+            id.includes('hash-base') ||
+            id.includes('micro-ftch')
+          ) {
+            // Replace requires with appropriate imports
+            let modifiedCode = code;
+
+            // Replace crypto requires
+            modifiedCode = modifiedCode.replace(
+              /require\(['"]crypto['"]\)/g,
+              "require('vite-plugin-node-polyfills/polyfills/crypto')",
+            );
+
+            // Replace stream requires
+            modifiedCode = modifiedCode.replace(
+              /require\(['"]stream['"]\)/g,
+              "require('vite-plugin-node-polyfills/polyfills/stream')",
+            );
+
+            // Replace http requires
+            modifiedCode = modifiedCode.replace(
+              /require\(['"]http['"]\)/g,
+              "require('vite-plugin-node-polyfills/polyfills/http')",
+            );
+
+            // Replace https requires
+            modifiedCode = modifiedCode.replace(
+              /require\(['"]https['"]\)/g,
+              "require('vite-plugin-node-polyfills/polyfills/https')",
+            );
+
+            // Replace zlib requires
+            modifiedCode = modifiedCode.replace(
+              /require\(['"]zlib['"]\)/g,
+              "require('vite-plugin-node-polyfills/polyfills/zlib')",
+            );
+
+            return {
+              code: modifiedCode,
               map: null,
             };
           }
