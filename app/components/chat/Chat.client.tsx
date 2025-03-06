@@ -24,7 +24,7 @@ import { filesToArtifacts } from '~/utils/fileUtils';
 import { createScopedLogger, renderLogger } from '~/utils/logger';
 import { createSampler } from '~/utils/sampler';
 import { getTemplates, selectStarterTemplate } from '~/utils/selectStarterTemplate';
-import SubscriptionTiers from '~/components/wallet/SubscriptionTiers';
+import SubscriptionTiers from '../wallet/SubscriptionTiers';
 import { BaseChat } from './BaseChat';
 
 const toastAnimation = cssTransition({
@@ -48,10 +48,8 @@ export function Chat() {
   const fetchBalance = async () => {
     try {
       setLoading(true);
-
       let walletAddress = null;
       let response;
-
       if (publicKey) {
         // When no wallet is connected, still allow access as free tier
         walletAddress = publicKey.toBase58();
@@ -95,10 +93,8 @@ export function Chat() {
   }, [publicKey]);
 
   useEffect(() => {
-    /*
-     * If tierLoading is done and either wallet is connected or not,
-     * we can show the chat interface
-     */
+    // If tierLoading is done and either wallet is connected or not,
+    // we can show the chat interface
     if (!tierLoading) {
       setShowChatInterface(true);
     }
@@ -158,7 +154,6 @@ export function Chat() {
       </>
     );
   }
-
   return (
     <>
       <SubscriptionTiers onContinue={() => setShowChatInterface(true)} />
@@ -233,6 +228,7 @@ export const ChatImpl = memo(
     const [imageDataList, setImageDataList] = useState<string[]>([]);
     const [searchParams, setSearchParams] = useSearchParams();
     const [fakeLoading, setFakeLoading] = useState(false);
+    const [showChatInterface, setShowChatInterface] = useState(true);
 
     // Track if the current model is accessible based on user's tier
     const [hasModelAccess, setHasModelAccess] = useState(true);

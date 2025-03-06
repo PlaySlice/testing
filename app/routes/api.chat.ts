@@ -1,20 +1,20 @@
-import { parseTokenAccountResp } from '@raydium-io/raydium-sdk-v2';
 import { type ActionFunctionArgs } from '@remix-run/cloudflare';
-import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { Connection, PublicKey } from '@solana/web3.js';
 import { createDataStream, generateId } from 'ai';
 import { MAX_RESPONSE_SEGMENTS, MAX_TOKENS, type FileMap } from '~/lib/.server/llm/constants';
-import { createSummary } from '~/lib/.server/llm/create-summary';
-import { getFilePaths, selectContext } from '~/lib/.server/llm/select-context';
+import { CONTINUE_PROMPT } from '~/lib/common/prompts/prompts';
 import { streamText, type Messages, type StreamingOptions } from '~/lib/.server/llm/stream-text';
 import SwitchableStream from '~/lib/.server/llm/switchable-stream';
-import { extractPropertiesFromMessage } from '~/lib/.server/llm/utils';
-import { CONTINUE_PROMPT } from '~/lib/common/prompts/prompts';
-import { TierLevel } from '~/lib/hooks/useTierAccess';
-import type { ContextAnnotation, ProgressAnnotation } from '~/types/context';
 import type { IProviderSetting } from '~/types/model';
-import { WORK_DIR } from '~/utils/constants';
 import { createScopedLogger } from '~/utils/logger';
+import { getFilePaths, selectContext } from '~/lib/.server/llm/select-context';
+import type { ContextAnnotation, ProgressAnnotation } from '~/types/context';
+import { WORK_DIR } from '~/utils/constants';
+import { createSummary } from '~/lib/.server/llm/create-summary';
+import { extractPropertiesFromMessage } from '~/lib/.server/llm/utils';
+import { Connection, PublicKey } from '@solana/web3.js';
+import { parseTokenAccountResp } from '@raydium-io/raydium-sdk-v2';
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
+import { TierLevel } from '~/lib/hooks/useTierAccess';
 
 // Define the token thresholds for each tier - keep in sync with useTierAccess.ts
 const TIER_THRESHOLDS = {
@@ -78,7 +78,6 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
       if (walletAddress) {
         // If wallet address is provided, verify tier access
         const publicKey = new PublicKey(walletAddress);
-
         // Use generic property access to avoid type errors
         const endpoint = 'https://mainnet.helius-rpc.com/?api-key=ca767d51-be57-44d3-b2b1-b370bc1f0234';
 
@@ -87,10 +86,8 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         hasAccess = result.hasAccess;
         tier = result.tier;
       } else {
-        /*
-         * If no wallet address, treat as free tier
-         * Only allow access to Google models
-         */
+        // If no wallet address, treat as free tier
+        // Only allow access to Google models
         hasAccess = provider.toLowerCase() === 'google';
         tier = TierLevel.FREE;
       }
@@ -113,10 +110,8 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
       // Log tier access
       logger.debug(`Wallet ${walletAddress} with tier ${tier} accessing model ${model}`);
     } catch (error) {
-      /*
-       * If there's an error verifying the wallet, log it but continue with the request
-       * This ensures the API still works even if wallet verification fails
-       */
+      // If there's an error verifying the wallet, log it but continue with the request
+      // This ensures the API still works even if wallet verification fails
       logger.error('Error verifying wallet tier access:', error);
     }
   }
@@ -456,14 +451,12 @@ async function verifyTierAccess(
     );
 
     let tokenBalance = 0;
-
     if (mintAccount.length > 0) {
       tokenBalance = parseFloat(mintAccount[0].amount) / 10 ** 6;
     }
 
     // Determine tier based on balance
     let currentTier;
-
     if (tokenBalance >= TIER_THRESHOLDS[TierLevel.WHALE]) {
       currentTier = TierLevel.WHALE;
     } else if (tokenBalance >= TIER_THRESHOLDS[TierLevel.TIER3]) {
@@ -527,6 +520,5 @@ async function fetchTokenAccountData(endpoint: string, publicKey: PublicKey) {
       value: [...tokenAccountResp.value, ...token2022Resp.value],
     },
   });
-
   return tokenAccountData;
 }

@@ -1,7 +1,7 @@
 import { useWallet } from '@solana/wallet-adapter-react';
 import type { KeyboardEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { TierLevel } from '~/lib/hooks/useTierAccess';
+import { TierLevel, useTierAccess } from '~/lib/hooks/useTierAccess';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 import type { ProviderInfo } from '~/types/model';
 import { classNames } from '~/utils/classNames';
@@ -46,6 +46,7 @@ export const ModelSelector = ({
 
   // Get wallet and tier information for model access
   const { publicKey } = useWallet();
+  const { currentTier } = useTierAccess();
 
   // Pre-compute model access information at the component level
   const [modelAccessMap, setModelAccessMap] = useState<Record<string, { hasAccess: boolean; isLoading: boolean }>>({});
@@ -66,7 +67,6 @@ export const ModelSelector = ({
 
       setModelAccessMap(defaultAccess);
       console.log('No provider, default access map:', defaultAccess);
-
       return;
     }
 
@@ -77,7 +77,6 @@ export const ModelSelector = ({
           // Only Google models are accessible in free tier
           const hasAccess = model.provider.toLowerCase() === 'google';
           acc[`${model.provider}:${model.name}`] = { hasAccess, isLoading: false };
-
           return acc;
         },
         {} as Record<string, { hasAccess: boolean; isLoading: boolean }>,
@@ -89,8 +88,8 @@ export const ModelSelector = ({
       // Notify parent about access status for current model
       if (model && onAccessChange) {
         const modelInfo = modelList.find((m) => m.name === model && m.provider === provider.name);
-
         if (modelInfo) {
+          const modelKey = `${modelInfo.provider}:${modelInfo.name}`;
           const hasAccess = modelInfo.provider.toLowerCase() === 'google';
           onAccessChange(hasAccess);
         }
@@ -115,9 +114,7 @@ export const ModelSelector = ({
 
     // Fetch access for each model
     const checkModelAccess = async () => {
-      if (!publicKey) {
-        return;
-      }
+      if (!publicKey) return;
 
       const walletAddress = publicKey.toString();
       const accessPromises = providerModels.map(async (modelInfo) => {
@@ -157,9 +154,11 @@ export const ModelSelector = ({
             isLoading: result.isLoading,
           };
         });
-
         return newMap;
       });
+
+      // Return results for the .then() handler
+      return results;
     };
 
     // When results come back, log them
@@ -208,7 +207,6 @@ export const ModelSelector = ({
           'px-4 py-2 transition-colors',
           isSelected || isFocused ? 'bg-bolt-elements-background-depth-3' : '',
           !hasAccess && !isLoading ? 'opacity-50' : '',
-
           // Only show cursor-pointer for models that are accessible or still loading
           hasAccess || isLoading ? 'cursor-pointer' : 'cursor-not-allowed',
         )}
@@ -348,7 +346,6 @@ export const ModelSelector = ({
   const handleModelSelect = (selectedModel: string) => {
     if (setModel) {
       const modelInfo = modelList.find((m) => m.name === selectedModel);
-
       if (modelInfo) {
         const modelKey = `${modelInfo.provider}:${modelInfo.name}`;
         const { hasAccess = true, isLoading = false } = modelAccessMap[modelKey] || {
@@ -385,7 +382,6 @@ export const ModelSelector = ({
     // If there's a currently selected model, log its access status
     if (model && provider) {
       const modelInfo = modelList.find((m) => m.name === model && m.provider === provider.name);
-
       if (modelInfo) {
         const modelKey = `${modelInfo.provider}:${modelInfo.name}`;
         const accessStatus = modelAccessMap[modelKey];

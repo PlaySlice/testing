@@ -53,7 +53,6 @@ export function useModelAccess(modelName: string, providerName: string) {
 
         // At this point publicKey is non-null since we checked above
         const walletAddress = publicKey?.toString();
-
         if (!walletAddress) {
           throw new Error('Wallet address is not available');
         }
