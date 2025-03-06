@@ -1,7 +1,3 @@
-/*
- * @ts-nocheck
- * Preventing TS checks with files presented in the video for a better presentation.
- */
 import type { JSONValue, Message } from 'ai';
 import React, { type RefCallback, useEffect, useState } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
@@ -36,6 +32,7 @@ import ProgressCompilation from './ProgressCompilation';
 import type { ProgressAnnotation } from '~/types/context';
 import type { ActionRunner } from '~/lib/runtime/action-runner';
 import { LOCAL_PROVIDERS } from '~/lib/stores/settings';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -71,6 +68,9 @@ interface BaseChatProps {
   clearAlert?: () => void;
   data?: JSONValue[] | undefined;
   actionRunner?: ActionRunner;
+  hasModelAccess?: boolean;
+  onModelAccessChange?: (hasAccess: boolean) => void;
+  navigateToTiers?: () => void;
 }
 
 export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
@@ -107,6 +107,9 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       clearAlert,
       data,
       actionRunner,
+      hasModelAccess,
+      onModelAccessChange,
+      navigateToTiers,
     },
     ref,
   ) => {
@@ -119,6 +122,9 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const [transcript, setTranscript] = useState('');
     const [isModelLoading, setIsModelLoading] = useState<string | undefined>('all');
     const [progressAnnotations, setProgressAnnotations] = useState<ProgressAnnotation[]>([]);
+
+    const { publicKey } = useWallet();
+
     useEffect(() => {
       if (data) {
         const progressList = data.filter(
@@ -318,10 +324,10 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
             {!chatStarted && (
               <div id="intro" className="mt-[16vh] max-w-chat mx-auto text-center px-4 lg:px-0">
                 <h1 className="text-3xl lg:text-6xl font-bold text-bolt-elements-textPrimary mb-4 animate-fade-in">
-                  Where ideas begin
+                  Dream it, Build it
                 </h1>
                 <p className="text-md lg:text-xl mb-8 text-bolt-elements-textSecondary animate-fade-in animation-delay-200">
-                  Bring ideas to life in seconds or get help on existing projects.
+                  Design, develop, and launch in seconds.
                 </p>
               </div>
             )}
@@ -334,12 +340,29 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
               <ClientOnly>
                 {() => {
                   return chatStarted ? (
-                    <Messages
-                      ref={messageRef}
-                      className="flex flex-col w-full flex-1 max-w-chat pb-6 mx-auto z-1"
-                      messages={messages}
-                      isStreaming={isStreaming}
-                    />
+                    <>
+                      <Messages
+                        ref={messageRef}
+                        className="flex flex-col w-full flex-1 max-w-chat pb-6 mx-auto z-1"
+                        messages={messages}
+                        isStreaming={isStreaming}
+                      />
+
+                      {/* Free tier notification for users without a connected wallet */}
+                      {!publicKey && (
+                        <div className="bg-bolt-elements-background-depth-2 border border-bolt-elements-border-primary rounded-md p-4 mb-4 max-w-chat mx-auto flex items-center justify-between">
+                          <div className="flex items-center">
+                            <span className="i-ph:info-fill text-bolt-elements-textSecondary mr-2 text-xl" />
+                            <div>
+                              <p className="text-bolt-elements-textPrimary font-medium">You're using the free tier</p>
+                              <p className="text-bolt-elements-textSecondary text-sm">
+                                Connect your wallet to access premium models and features
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   ) : null;
                 }}
               </ClientOnly>
@@ -412,7 +435,25 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                             providerList={providerList || (PROVIDER_LIST as ProviderInfo[])}
                             apiKeys={apiKeys}
                             modelLoading={isModelLoading}
+                            onAccessChange={onModelAccessChange}
                           />
+                          {!hasModelAccess && (
+                            <div className="mt-2 p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-md text-sm flex items-center">
+                              <span className="lock-icon text-purple-500 mr-2 i-ph:lock-key-fill" />
+                              <span>
+                                You need to upgrade your tier to access this model. Please select a different model or
+                                upgrade your subscription.
+                              </span>
+                            </div>
+                          )}
+                          {!publicKey && (
+                            <div className="mt-2 p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-md text-sm flex items-center">
+                              <span className="wallet-icon text-blue-500 mr-2 i-ph:wallet-fill" />
+                              <span>
+                                You're using the free tier with limited model access. Connect wallet to upgrade.
+                              </span>
+                            </div>
+                          )}
                           {(providerList || []).length > 0 &&
                             provider &&
                             (!LOCAL_PROVIDERS.includes(provider.name) || 'OpenAILike') && (
@@ -457,7 +498,12 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                         'w-full pl-4 pt-4 pr-16 outline-none resize-none text-bolt-elements-textPrimary placeholder-bolt-elements-textTertiary bg-transparent text-sm',
                         'transition-all duration-200',
                         'hover:border-bolt-elements-focus',
+                        { 'opacity-50 cursor-not-allowed': !hasModelAccess },
                       )}
+                      disabled={!hasModelAccess}
+                      placeholder={
+                        hasModelAccess ? 'How can Bolt help you today?' : 'Please upgrade to access this model'
+                      }
                       onDragEnter={(e) => {
                         e.preventDefault();
                         e.currentTarget.style.border = '2px solid #1488fc';
@@ -518,7 +564,6 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                         minHeight: TEXTAREA_MIN_HEIGHT,
                         maxHeight: TEXTAREA_MAX_HEIGHT,
                       }}
-                      placeholder="How can Bolt help you today?"
                       translate="no"
                     />
                     <ClientOnly>
@@ -526,14 +571,14 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                         <SendButton
                           show={input.length > 0 || isStreaming || uploadedFiles.length > 0}
                           isStreaming={isStreaming}
-                          disabled={!providerList || providerList.length === 0}
+                          disabled={!providerList || providerList.length === 0 || !hasModelAccess}
                           onClick={(event) => {
                             if (isStreaming) {
                               handleStop?.();
                               return;
                             }
 
-                            if (input.length > 0 || uploadedFiles.length > 0) {
+                            if ((input.length > 0 || uploadedFiles.length > 0) && hasModelAccess) {
                               handleSendMessage?.(event);
                             }
                           }}
@@ -582,6 +627,16 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
                           <div className={`i-ph:caret-${isModelSettingsCollapsed ? 'right' : 'down'} text-lg`} />
                           {isModelSettingsCollapsed ? <span className="text-xs">{model}</span> : <span />}
                         </IconButton>
+                        {navigateToTiers && (
+                          <IconButton
+                            title="Back to Tiers"
+                            className="transition-all flex items-center gap-1 bg-bolt-elements-item-backgroundDefault text-bolt-elements-item-contentDefault"
+                            onClick={navigateToTiers}
+                          >
+                            <div className="i-ph:arrow-left text-lg" />
+                            <span className="text-xs">Tiers</span>
+                          </IconButton>
+                        )}
                       </div>
                       {input.length > 3 ? (
                         <div className="text-xs text-bolt-elements-textTertiary">
