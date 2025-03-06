@@ -28,7 +28,6 @@ export default function Index() {
       <ClientOnly fallback={<div>Loading wallet connect...</div>}>
         {() => (
           <SolanaWalletProvider network={network}>
-            {/* Your app content here */}
             <Header />
             <main className="flex flex-col items-center justify-center flex-grow w-full relative overflow-hidden">
               <div className="absolute inset-0 overflow-hidden">
