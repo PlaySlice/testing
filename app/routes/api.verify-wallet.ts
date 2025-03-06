@@ -1,4 +1,5 @@
 // app/routes/api.verify-wallet.ts
+import '~/lib/polyfills/buffer-polyfill';
 import { json } from '@remix-run/cloudflare';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { parseTokenAccountResp } from '@raydium-io/raydium-sdk-v2';
