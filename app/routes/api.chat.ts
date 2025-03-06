@@ -78,6 +78,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
       if (walletAddress) {
         // If wallet address is provided, verify tier access
         const publicKey = new PublicKey(walletAddress);
+
         // Use generic property access to avoid type errors
         const endpoint = 'https://mainnet.helius-rpc.com/?api-key=ca767d51-be57-44d3-b2b1-b370bc1f0234';
 
@@ -86,8 +87,10 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         hasAccess = result.hasAccess;
         tier = result.tier;
       } else {
-        // If no wallet address, treat as free tier
-        // Only allow access to Google models
+        /*
+         * If no wallet address, treat as free tier
+         * Only allow access to Google models
+         */
         hasAccess = provider.toLowerCase() === 'google';
         tier = TierLevel.FREE;
       }
@@ -110,8 +113,10 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
       // Log tier access
       logger.debug(`Wallet ${walletAddress} with tier ${tier} accessing model ${model}`);
     } catch (error) {
-      // If there's an error verifying the wallet, log it but continue with the request
-      // This ensures the API still works even if wallet verification fails
+      /*
+       * If there's an error verifying the wallet, log it but continue with the request
+       * This ensures the API still works even if wallet verification fails
+       */
       logger.error('Error verifying wallet tier access:', error);
     }
   }
@@ -451,12 +456,14 @@ async function verifyTierAccess(
     );
 
     let tokenBalance = 0;
+
     if (mintAccount.length > 0) {
       tokenBalance = parseFloat(mintAccount[0].amount) / 10 ** 6;
     }
 
     // Determine tier based on balance
     let currentTier;
+
     if (tokenBalance >= TIER_THRESHOLDS[TierLevel.WHALE]) {
       currentTier = TierLevel.WHALE;
     } else if (tokenBalance >= TIER_THRESHOLDS[TierLevel.TIER3]) {
@@ -520,5 +527,6 @@ async function fetchTokenAccountData(endpoint: string, publicKey: PublicKey) {
       value: [...tokenAccountResp.value, ...token2022Resp.value],
     },
   });
+
   return tokenAccountData;
 }

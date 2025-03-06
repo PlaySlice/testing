@@ -25,7 +25,6 @@ const Tier: React.FC<TierProps> = ({
   isPremium,
   onClick,
   showUpgrade,
-  upgradeCost,
 }) => {
   const handlePurchaseClick = () => {
     if (!isActive) {
@@ -113,7 +112,7 @@ export interface SubscriptionTiersProps {
 
 export const SubscriptionTiers: React.FC<SubscriptionTiersProps> = ({ onContinue }) => {
   const walletState = useStore(walletStore);
-  const { currentTier, tiers, features } = useTierAccess();
+  const { currentTier, tiers } = useTierAccess();
 
   const calculateUpgradeCost = (targetTier: TierLevel): number => {
     const currentBalance = parseFloat(walletState.balance || '0');
