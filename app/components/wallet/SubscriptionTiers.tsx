@@ -115,8 +115,8 @@ export const SubscriptionTiers: React.FC<SubscriptionTiersProps> = ({ onContinue
     {
       level: TierLevel.FREE,
       name: 'Free',
-      description: 'Basic access with Google AI',
-      features: ['Access to Google AI models', 'Basic response time', 'Community support', 'Standard features'],
+      description: 'Basic access with Google AI and Mistral AI',
+      features: ['Access to Google AI models and Mistral AI', 'Basic response time', 'Community support', 'Standard features'],
       isActive: tier === TierLevel.FREE,
       showUpgrade: false,
       onClick: () => tier === TierLevel.FREE && onContinue(),
@@ -127,9 +127,8 @@ export const SubscriptionTiers: React.FC<SubscriptionTiersProps> = ({ onContinue
       description: 'Enhanced AI access with Deepseek',
       features: [
         'All Free tier features',
-        'Google & Deepseek models',
+        'Deepseek models',
         'Faster response time',
-        'Priority support',
         'Enhanced features',
       ],
       isActive: tier === TierLevel.TIER1,
@@ -139,13 +138,11 @@ export const SubscriptionTiers: React.FC<SubscriptionTiersProps> = ({ onContinue
     {
       level: TierLevel.TIER2,
       name: 'Tier 2',
-      description: 'Advanced access with Anthropic models',
+      description: 'Advanced access with OpenAI models',
       features: [
         'All Tier 1 features',
-        'Anthropic Claude models',
+        'OpenAI models',
         'Limited monthly word count',
-        'Advanced configurations',
-        'Premium support',
       ],
       isActive: tier === TierLevel.TIER2,
       showUpgrade: tier === TierLevel.FREE || tier === TierLevel.TIER1,

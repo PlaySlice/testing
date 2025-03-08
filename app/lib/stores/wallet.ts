@@ -19,8 +19,8 @@ export const TIER_THRESHOLDS = {
 // Centralized model access per tier
 export const TIER_MODEL_ACCESS = {
   [TierLevel.FREE]: ['Google', 'Mistral'],
-  [TierLevel.TIER1]: ['Google', 'Deepseek', 'Mistral', 'OpenRouter'],
-  [TierLevel.TIER2]: ['Google', 'Deepseek', 'Anthropic', 'Mistral', 'OpenRouter'],
+  [TierLevel.TIER1]: ['Google', 'Mistral', 'OpenRouter'],
+  [TierLevel.TIER2]: ['Google', 'Mistral', 'OpenRouter', 'OpenAI'],
   [TierLevel.TIER3]: [
     'Google',
     'Deepseek',
