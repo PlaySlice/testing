@@ -55,12 +55,12 @@ export default class GoogleProvider extends BaseProvider {
 
     const data = res.models.filter((model: any) => model.outputTokenLimit > 8000);
 
-    return data.map((m: any) => ({
+/*     return data.map((m: any) => ({
       name: m.name.replace('models/', ''),
       label: `${m.displayName} - context ${Math.floor((m.inputTokenLimit + m.outputTokenLimit) / 1000) + 'k'}`,
       provider: this.name,
       maxTokenAllowed: m.inputTokenLimit + m.outputTokenLimit || 8000,
-    }));
+    })); */
   }
 
   getModelInstance(options: {
