@@ -350,8 +350,18 @@ ${value.content}
         return;
       }
 
+      const fixedMessages = messages.map((message) => {
+        if (message.role === 'assistant') {
+          return {
+            ...message,
+            content: message.content.replace(/boltArtifact/g, 'ez1Artifact').replace(/boltAction/g, 'ez1Action'),
+          };
+        }
+        return message;
+      });
+
       try {
-        const newId = await createChatFromMessages(db, description, messages, metadata);
+        const newId = await createChatFromMessages(db, description, fixedMessages, metadata);
         window.location.href = `/chat/${newId}`;
         toast.success('Chat imported successfully');
       } catch (error) {

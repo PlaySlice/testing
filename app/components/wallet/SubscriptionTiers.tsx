@@ -5,6 +5,7 @@ import { classNames } from '~/utils/classNames';
 
 interface TierProps {
   name: string;
+  level: keyof typeof TIER_THRESHOLDS;
   description: string;
   features: string[];
   isActive: boolean;
@@ -13,7 +14,16 @@ interface TierProps {
   showUpgrade: boolean;
 }
 
-const Tier: React.FC<TierProps> = ({ name, description, features, isActive, isPremium, onClick, showUpgrade }) => {
+const Tier: React.FC<TierProps> = ({
+  name,
+  level,
+  description,
+  features,
+  isActive,
+  isPremium,
+  onClick,
+  showUpgrade,
+}) => {
   const handlePurchaseClick = () => {
     if (!isActive) {
       window.open(
@@ -49,9 +59,7 @@ const Tier: React.FC<TierProps> = ({ name, description, features, isActive, isPr
       <div className="mb-4">
         <h3 className="text-xl font-bold text-bolt-elements-textPrimary">{name}</h3>
         <div className="mt-2">
-          <span className="text-2xl font-bold text-bolt-elements-textPrimary">
-            {TIER_THRESHOLDS[name.toLowerCase() as keyof typeof TIER_THRESHOLDS]}
-          </span>
+          <span className="text-2xl font-bold text-bolt-elements-textPrimary">{TIER_THRESHOLDS[level]}</span>
           <span className="text-bolt-elements-textSecondary ml-1"> $EZ</span>
         </div>
         <p className="text-sm text-bolt-elements-textSecondary mt-2">{description}</p>
