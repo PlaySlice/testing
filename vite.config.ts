@@ -113,6 +113,11 @@ export default defineConfig((config) => {
     resolve: {
       alias: {
         buffer: 'vite-plugin-node-polyfills/polyfills/buffer',
+        crypto: 'crypto-browserify',
+        stream: 'stream-browserify',
+        http: 'stream-http',
+        https: 'https-browserify',
+        zlib: 'browserify-zlib',
       },
     },
     plugins: [
