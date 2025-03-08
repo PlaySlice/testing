@@ -33,14 +33,10 @@ export function usePromptEnhancer() {
       requestBody.apiKeys = apiKeys;
     }
 
-    console.log('Request Body: ', requestBody);
-
     const response = await fetch('/api/enhancer', {
       method: 'POST',
       body: JSON.stringify(requestBody),
     });
-
-    console.log('Response: ', response.body);
 
     const reader = response.body?.getReader();
 
@@ -57,6 +53,7 @@ export function usePromptEnhancer() {
 
         while (true) {
           const { value, done } = await reader.read();
+          console.log('Value: ', value);
           if (done) {
             break;
           }
@@ -69,10 +66,12 @@ export function usePromptEnhancer() {
           setInput(_input);
         }
       } catch (error) {
+        console.log('Error: ', error);
         _error = error;
         setInput(originalInput);
       } finally {
         if (_error) {
+          console.log('Error2: ', _error);
           logger.error(_error);
         }
 

@@ -19,10 +19,6 @@ async function enhancerAction({ context, request }: ActionFunctionArgs) {
     apiKeys?: Record<string, string>;
   }>();
 
-  console.log('Provider: ', provider);
-  console.log('Message: ', message);
-  console.log('Model: ', model);
-
   const { name: providerName } = provider;
 
   // validate 'model' and 'provider' fields
@@ -44,10 +40,6 @@ async function enhancerAction({ context, request }: ActionFunctionArgs) {
   const apiKeys = getApiKeysFromCookie(cookieHeader);
   const providerSettings = getProviderSettingsFromCookie(cookieHeader);
 
-  console.log('Cookie Header: ', cookieHeader);
-  console.log('API Keys: ', apiKeys);
-  console.log('Provider Settings: ', providerSettings);
-  console.log('Env: ', context.cloudflare?.env);
   try {
     const result = await streamText({
       messages: [
@@ -103,7 +95,6 @@ async function enhancerAction({ context, request }: ActionFunctionArgs) {
       },
     });
 
-    console.log('Result: ', result);
     // Handle streaming errors in a non-blocking way
     (async () => {
       try {
