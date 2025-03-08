@@ -28,23 +28,23 @@ describe('StreamingMessageParser', () => {
       ['Foo bar <', 'Foo bar '],
       ['Foo bar <p', 'Foo bar <p'],
       [['Foo bar <', 's', 'p', 'an>some text</span>'], 'Foo bar <span>some text</span>'],
-    ])('should correctly parse chunks and strip out bolt artifacts (%#)', (input, expected) => {
+    ])('should correctly parse chunks and strip out ez1 artifacts (%#)', (input, expected) => {
       runTest(input, expected);
     });
   });
 
   describe('invalid or incomplete artifacts', () => {
     it.each<[string | string[], ExpectedResult | string]>([
-      ['Foo bar <b', 'Foo bar '],
-      ['Foo bar <ba', 'Foo bar <ba'],
-      ['Foo bar <bol', 'Foo bar '],
-      ['Foo bar <bolt', 'Foo bar '],
-      ['Foo bar <bolta', 'Foo bar <bolta'],
-      ['Foo bar <boltA', 'Foo bar '],
-      ['Foo bar <boltArtifacs></boltArtifact>', 'Foo bar <boltArtifacs></boltArtifact>'],
-      ['Before <oltArtfiact>foo</boltArtifact> After', 'Before <oltArtfiact>foo</boltArtifact> After'],
-      ['Before <boltArtifactt>foo</boltArtifact> After', 'Before <boltArtifactt>foo</boltArtifact> After'],
-    ])('should correctly parse chunks and strip out bolt artifacts (%#)', (input, expected) => {
+      ['Foo bar <e', 'Foo bar '],
+      ['Foo bar <ez', 'Foo bar <ba'],
+      ['Foo bar <ez1', 'Foo bar '],
+      ['Foo bar <ez1A', 'Foo bar '],
+      ['Foo bar <ez1Ar', 'Foo bar <ez1a'],
+      ['Foo bar <ez1Art', 'Foo bar '],
+      ['Foo bar <ez1Artifacs></ez1Artifact>', 'Foo bar <ez1Artifacs></ez1Artifact>'],
+      ['Before <z1Artfiact>foo</ez1Artifact> After', 'Before <z1Artfiact>foo</ez1Artifact> After'],
+      ['Before <ez1Artifactt>foo</ez1Artifact> After', 'Before <ez1Artifactt>foo</ez1Artifact> After'],
+    ])('should correctly parse chunks and strip out ez1 artifacts (%#)', (input, expected) => {
       runTest(input, expected);
     });
   });
@@ -52,7 +52,7 @@ describe('StreamingMessageParser', () => {
   describe('valid artifacts without actions', () => {
     it.each<[string | string[], ExpectedResult | string]>([
       [
-        'Some text before <boltArtifact title="Some title" id="artifact_1">foo bar</boltArtifact> Some more text',
+        'Some text before <ez1Artifact title="Some title" id="artifact_1">foo bar</ez1Artifact> Some more text',
         {
           output: 'Some text before  Some more text',
           callbacks: { onArtifactOpen: 1, onArtifactClose: 1, onActionOpen: 0, onActionClose: 0 },
@@ -60,9 +60,9 @@ describe('StreamingMessageParser', () => {
       ],
       [
         [
-          'Some text before <boltArti',
+          'Some text before <ez1Arti',
           'fact',
-          ' title="Some title" id="artifact_1" type="bundled" >foo</boltArtifact> Some more text',
+          ' title="Some title" id="artifact_1" type="bundled" >foo</ez1Artifact> Some more text',
         ],
         {
           output: 'Some text before  Some more text',
@@ -71,12 +71,12 @@ describe('StreamingMessageParser', () => {
       ],
       [
         [
-          'Some text before <boltArti',
+          'Some text before <ez1Arti',
           'fac',
           't title="Some title" id="artifact_1"',
           ' ',
           '>',
-          'foo</boltArtifact> Some more text',
+          'foo</ez1Artifact> Some more text',
         ],
         {
           output: 'Some text before  Some more text',
@@ -85,11 +85,11 @@ describe('StreamingMessageParser', () => {
       ],
       [
         [
-          'Some text before <boltArti',
+          'Some text before <ez1Arti',
           'fact',
           ' title="Some title" id="artifact_1"',
           ' >fo',
-          'o</boltArtifact> Some more text',
+          'o</ez1Artifact> Some more text',
         ],
         {
           output: 'Some text before  Some more text',
@@ -98,13 +98,13 @@ describe('StreamingMessageParser', () => {
       ],
       [
         [
-          'Some text before <boltArti',
+          'Some text before <ez1Arti',
           'fact tit',
           'le="Some ',
           'title" id="artifact_1">fo',
           'o',
           '<',
-          '/boltArtifact> Some more text',
+          '/ez1Artifact> Some more text',
         ],
         {
           output: 'Some text before  Some more text',
@@ -113,11 +113,11 @@ describe('StreamingMessageParser', () => {
       ],
       [
         [
-          'Some text before <boltArti',
+          'Some text before <ez1Arti',
           'fact title="Some title" id="artif',
           'act_1">fo',
           'o<',
-          '/boltArtifact> Some more text',
+          '/ez1Artifact> Some more text',
         ],
         {
           output: 'Some text before  Some more text',
@@ -125,7 +125,7 @@ describe('StreamingMessageParser', () => {
         },
       ],
       [
-        'Before <boltArtifact title="Some title" id="artifact_1">foo</boltArtifact> After',
+        'Before <ez1Artifact title="Some title" id="artifact_1">foo</ez1Artifact> After',
         {
           output: 'Before  After',
           callbacks: { onArtifactOpen: 1, onArtifactClose: 1, onActionOpen: 0, onActionClose: 0 },
@@ -139,14 +139,14 @@ describe('StreamingMessageParser', () => {
   describe('valid artifacts with actions', () => {
     it.each<[string | string[], ExpectedResult | string]>([
       [
-        'Before <boltArtifact title="Some title" id="artifact_1"><boltAction type="shell">npm install</boltAction></boltArtifact> After',
+        'Before <ez1Artifact title="Some title" id="artifact_1"><ez1Action type="shell">npm install</ez1Action></ez1Artifact> After',
         {
           output: 'Before  After',
           callbacks: { onArtifactOpen: 1, onArtifactClose: 1, onActionOpen: 1, onActionClose: 1 },
         },
       ],
       [
-        'Before <boltArtifact title="Some title" id="artifact_1"><boltAction type="shell">npm install</boltAction><boltAction type="file" filePath="index.js">some content</boltAction></boltArtifact> After',
+        'Before <ez1Artifact title="Some title" id="artifact_1"><ez1Action type="shell">npm install</ez1Action><ez1Action type="file" filePath="index.js">some content</ez1Action></ez1Artifact> After',
         {
           output: 'Before  After',
           callbacks: { onArtifactOpen: 1, onArtifactClose: 1, onActionOpen: 2, onActionClose: 2 },

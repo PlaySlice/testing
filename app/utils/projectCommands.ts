@@ -72,29 +72,29 @@ export function createCommandsMessage(commands: ProjectCommands): Message | null
 
   if (commands.setupCommand) {
     commandString += `
-<boltAction type="shell">${commands.setupCommand}</boltAction>`;
+<ez1Action type="shell">${commands.setupCommand}</ez1Action>`;
   }
 
   if (commands.startCommand) {
     commandString += `
-<boltAction type="start">${commands.startCommand}</boltAction>
+<ez1Action type="start">${commands.startCommand}</ez1Action>
 `;
   }
 
   return {
     role: 'assistant',
     content: `
-<boltArtifact id="project-setup" title="Project Setup">
+<ez1Artifact id="project-setup" title="Project Setup">
 ${commandString}
-</boltArtifact>${commands.followupMessage ? `\n\n${commands.followupMessage}` : ''}`,
+</ez1Artifact>${commands.followupMessage ? `\n\n${commands.followupMessage}` : ''}`,
     id: generateId(),
     createdAt: new Date(),
   };
 }
 
 export function escapeBoltArtifactTags(input: string) {
-  // Regular expression to match boltArtifact tags and their content
-  const regex = /(<boltArtifact[^>]*>)([\s\S]*?)(<\/boltArtifact>)/g;
+  // Regular expression to match ez1Artifact tags and their content
+  const regex = /(<ez1Artifact[^>]*>)([\s\S]*?)(<\/ez1Artifact>)/g;
 
   return input.replace(regex, (match, openTag, content, closeTag) => {
     // Escape the opening tag
@@ -110,7 +110,7 @@ export function escapeBoltArtifactTags(input: string) {
 
 export function escapeBoltAActionTags(input: string) {
   // Regular expression to match boltArtifact tags and their content
-  const regex = /(<boltAction[^>]*>)([\s\S]*?)(<\/boltAction>)/g;
+  const regex = /(<ez1Action[^>]*>)([\s\S]*?)(<\/ez1Action>)/g;
 
   return input.replace(regex, (match, openTag, content, closeTag) => {
     // Escape the opening tag

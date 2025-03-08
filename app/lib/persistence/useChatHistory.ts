@@ -120,22 +120,22 @@ export function useChatHistory() {
                   id: storedMessages.messages[snapshotIndex].id,
                   role: 'assistant',
                   content: ` 📦 Chat Restored from snapshot, You can revert this message to load the full chat history
-                  <boltArtifact id="imported-files" title="Project Files Snapshot" type="bundled">
+                  <ez1Artifact id="imported-files" title="Project Files Snapshot" type="bundled">
                   ${Object.entries(snapshot?.files || {})
                     .filter((x) => !x[0].endsWith('lock.json'))
                     .map(([key, value]) => {
                       if (value?.type === 'file') {
                         return `
-                      <boltAction type="file" filePath="${key}">
+                      <ez1Action type="file" filePath="${key}">
 ${value.content}
-                      </boltAction>
+                      </ez1Action>
                       `;
                       } else {
                         return ``;
                       }
                     })
                     .join('\n')}
-                  </boltArtifact>
+                  </ez1Artifact>
                   `,
                   annotations: [
                     'no-store',

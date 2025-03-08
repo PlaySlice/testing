@@ -121,16 +121,16 @@ ${skippedFiles.map((f) => `- ${f}`).join('\n')}`
     : ''
 }
 
-<boltArtifact id="imported-files" title="Git Cloned Files" type="bundled">
+<ez1Artifact id="imported-files" title="Git Cloned Files" type="bundled">
 ${fileContents
   .map(
     (file) =>
-      `<boltAction type="file" filePath="${file.path}">
+      `<ez1Action type="file" filePath="${file.path}">
 ${escapeBoltTags(file.content)}
-</boltAction>`,
+</ez1Action>`,
   )
   .join('\n')}
-</boltArtifact>`,
+</ez1Artifact>`,
           id: generateId(),
           createdAt: new Date(),
         };
