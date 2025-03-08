@@ -71,12 +71,12 @@ export default class AnthropicProvider extends BaseProvider {
 
     const data = res.data.filter((model: any) => model.type === 'model' && !staticModelIds.includes(model.id));
 
-    return data.map((m: any) => ({
+/*     return data.map((m: any) => ({
       name: m.id,
       label: `${m.display_name}`,
       provider: this.name,
       maxTokenAllowed: 32000,
-    }));
+    })); */
   }
 
   getModelInstance: (options: {
