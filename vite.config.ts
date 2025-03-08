@@ -108,10 +108,12 @@ export default defineConfig((config) => {
         define: {
           global: 'globalThis',
         },
+        platform: 'browser',
       },
     },
     resolve: {
       alias: {
+        // Use browser-compatible polyfills
         buffer: 'vite-plugin-node-polyfills/polyfills/buffer',
         crypto: 'crypto-browserify',
         stream: 'stream-browserify',
@@ -122,7 +124,7 @@ export default defineConfig((config) => {
     },
     plugins: [
       nodePolyfills({
-        include: ['buffer', 'process', 'util', 'stream'],
+        include: ['buffer', 'process', 'util', 'stream', 'crypto'],
         globals: {
           Buffer: true,
           process: true,
