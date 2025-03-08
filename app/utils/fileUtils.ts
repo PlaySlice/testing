@@ -106,16 +106,16 @@ export const detectProjectType = async (
 
 export const filesToArtifacts = (files: { [path: string]: { content: string } }, id: string): string => {
   return `
-<boltArtifact id="${id}" title="User Updated Files">
+<ez1Artifact id="${id}" title="User Updated Files">
 ${Object.keys(files)
   .map(
     (filePath) => `
-<boltAction type="file" filePath="${filePath}">
+<ez1Action type="file" filePath="${filePath}">
 ${files[filePath].content}
-</boltAction>
+</ez1Action>
 `,
   )
   .join('\n')}
-</boltArtifact>
+</ez1Artifact>
   `;
 };
