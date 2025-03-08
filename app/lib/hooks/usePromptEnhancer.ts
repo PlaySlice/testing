@@ -33,10 +33,15 @@ export function usePromptEnhancer() {
       requestBody.apiKeys = apiKeys;
     }
 
+    console.log('Request Body: ', requestBody);
+
     const response = await fetch('/api/enhancer', {
       method: 'POST',
       body: JSON.stringify(requestBody),
     });
+
+    console.log('Response: ', response);
+
 
     const reader = response.body?.getReader();
 
