@@ -179,14 +179,14 @@ export default function FeaturesTab() {
 
   const features = {
     stable: [
-      {
+   /*    {
         id: 'latestBranch',
         title: 'Main Branch Updates',
         description: 'Get the latest updates from the main branch',
         icon: 'i-ph:git-branch',
         enabled: isLatestBranch,
         tooltip: 'Enabled by default to receive updates from the main development branch',
-      },
+      }, */
       {
         id: 'autoSelectTemplate',
         title: 'Auto Select Template',
@@ -203,14 +203,14 @@ export default function FeaturesTab() {
         enabled: contextOptimizationEnabled,
         tooltip: 'Enabled by default for improved AI responses',
       },
-      {
+  /*     {
         id: 'eventLogs',
         title: 'Event Logging',
         description: 'Enable detailed event logging and history',
         icon: 'i-ph:list-bullets',
         enabled: eventLogs,
         tooltip: 'Enabled by default to record detailed logs of system events and user actions',
-      },
+      }, */
     ],
     beta: [],
   };

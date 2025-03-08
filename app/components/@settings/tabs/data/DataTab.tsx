@@ -32,7 +32,7 @@ export default function DataTab() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `bolt-chats-${new Date().toISOString()}.json`;
+      a.download = `ez1-chats-${new Date().toISOString()}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -351,7 +351,7 @@ export default function DataTab() {
       </motion.div>
 
       {/* Settings Backup Section */}
-      <motion.div
+{/*       <motion.div
         className="bg-white dark:bg-[#0A0A0A] rounded-lg p-6 border border-[#E5E5E5] dark:border-[#1A1A1A]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -393,10 +393,10 @@ export default function DataTab() {
             Reset Settings
           </motion.button>
         </div>
-      </motion.div>
+      </motion.div> */}
 
       {/* API Keys Management Section */}
-      <motion.div
+{/*       <motion.div
         className="bg-white dark:bg-[#0A0A0A] rounded-lg p-6 border border-[#E5E5E5] dark:border-[#1A1A1A]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -446,7 +446,7 @@ export default function DataTab() {
             Import API Keys
           </motion.button>
         </div>
-      </motion.div>
+      </motion.div> */}
     </div>
   );
 }
