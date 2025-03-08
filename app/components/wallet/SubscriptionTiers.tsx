@@ -1,31 +1,19 @@
 import React from 'react';
 import { useStore } from '@nanostores/react';
-import { walletStore } from '~/lib/stores/wallet';
+import { TIER_THRESHOLDS, TierLevel, walletStore } from '~/lib/stores/wallet';
 import { classNames } from '~/utils/classNames';
-import { useTierAccess, TierLevel } from '~/lib/hooks/useTierAccess';
 
 interface TierProps {
   name: string;
-  tokenAmount: string;
   description: string;
   features: string[];
   isActive: boolean;
   isPremium?: boolean;
   onClick: () => void;
   showUpgrade: boolean;
-  upgradeCost?: number;
 }
 
-const Tier: React.FC<TierProps> = ({
-  name,
-  tokenAmount,
-  description,
-  features,
-  isActive,
-  isPremium,
-  onClick,
-  showUpgrade,
-}) => {
+const Tier: React.FC<TierProps> = ({ name, description, features, isActive, isPremium, onClick, showUpgrade }) => {
   const handlePurchaseClick = () => {
     if (!isActive) {
       window.open(
@@ -61,7 +49,9 @@ const Tier: React.FC<TierProps> = ({
       <div className="mb-4">
         <h3 className="text-xl font-bold text-bolt-elements-textPrimary">{name}</h3>
         <div className="mt-2">
-          <span className="text-2xl font-bold text-bolt-elements-textPrimary">{tokenAmount}</span>
+          <span className="text-2xl font-bold text-bolt-elements-textPrimary">
+            {TIER_THRESHOLDS[name.toLowerCase() as keyof typeof TIER_THRESHOLDS]}
+          </span>
           <span className="text-bolt-elements-textSecondary ml-1"> $EZ</span>
         </div>
         <p className="text-sm text-bolt-elements-textSecondary mt-2">{description}</p>
@@ -111,29 +101,21 @@ export interface SubscriptionTiersProps {
 }
 
 export const SubscriptionTiers: React.FC<SubscriptionTiersProps> = ({ onContinue }) => {
-  const walletState = useStore(walletStore);
-  const { currentTier, tiers } = useTierAccess();
-
-  const calculateUpgradeCost = (targetTier: TierLevel): number => {
-    const currentBalance = parseFloat(walletState.balance || '0');
-    return tiers[targetTier] - currentBalance;
-  };
+  const { balance, tier } = useStore(walletStore);
 
   const tierData = [
     {
       level: TierLevel.FREE,
       name: 'Free',
-      tokenAmount: formatTokenAmount(0),
       description: 'Basic access with Google AI',
       features: ['Access to Google AI models', 'Basic response time', 'Community support', 'Standard features'],
-      isActive: currentTier === TierLevel.FREE,
+      isActive: tier === TierLevel.FREE,
       showUpgrade: false,
-      onClick: () => currentTier === TierLevel.FREE && onContinue(),
+      onClick: () => tier === TierLevel.FREE && onContinue(),
     },
     {
       level: TierLevel.TIER1,
       name: 'Tier 1',
-      tokenAmount: formatTokenAmount(100000),
       description: 'Enhanced AI access with Deepseek',
       features: [
         'All Free tier features',
@@ -142,15 +124,13 @@ export const SubscriptionTiers: React.FC<SubscriptionTiersProps> = ({ onContinue
         'Priority support',
         'Enhanced features',
       ],
-      isActive: currentTier === TierLevel.TIER1,
-      showUpgrade: currentTier === TierLevel.FREE,
-      upgradeCost: calculateUpgradeCost(TierLevel.TIER1),
-      onClick: () => currentTier === TierLevel.TIER1 && onContinue(),
+      isActive: tier === TierLevel.TIER1,
+      showUpgrade: tier === TierLevel.FREE,
+      onClick: () => tier === TierLevel.TIER1 && onContinue(),
     },
     {
       level: TierLevel.TIER2,
       name: 'Tier 2',
-      tokenAmount: formatTokenAmount(350000),
       description: 'Advanced access with Anthropic models',
       features: [
         'All Tier 1 features',
@@ -159,15 +139,13 @@ export const SubscriptionTiers: React.FC<SubscriptionTiersProps> = ({ onContinue
         'Advanced configurations',
         'Premium support',
       ],
-      isActive: currentTier === TierLevel.TIER2,
-      showUpgrade: currentTier === TierLevel.FREE || currentTier === TierLevel.TIER1,
-      upgradeCost: calculateUpgradeCost(TierLevel.TIER2),
-      onClick: () => currentTier === TierLevel.TIER2 && onContinue(),
+      isActive: tier === TierLevel.TIER2,
+      showUpgrade: tier === TierLevel.FREE || tier === TierLevel.TIER1,
+      onClick: () => tier === TierLevel.TIER2 && onContinue(),
     },
     {
       level: TierLevel.TIER3,
       name: 'Tier 3',
-      tokenAmount: formatTokenAmount(1000000),
       description: 'Premium access to all models',
       features: [
         'Access to all AI providers',
@@ -176,15 +154,13 @@ export const SubscriptionTiers: React.FC<SubscriptionTiersProps> = ({ onContinue
         'VIP support',
         'Advanced features',
       ],
-      isActive: currentTier === TierLevel.TIER3,
-      showUpgrade: currentTier !== TierLevel.WHALE,
-      upgradeCost: calculateUpgradeCost(TierLevel.TIER3),
-      onClick: () => currentTier === TierLevel.TIER3 && onContinue(),
+      isActive: tier === TierLevel.TIER3,
+      showUpgrade: tier !== TierLevel.WHALE,
+      onClick: () => tier === TierLevel.TIER3 && onContinue(),
     },
     {
       level: TierLevel.WHALE,
       name: 'Whale',
-      tokenAmount: formatTokenAmount(10000000),
       description: 'Ultimate unlimited access',
       features: [
         'Unlimited access to all providers',
@@ -194,11 +170,10 @@ export const SubscriptionTiers: React.FC<SubscriptionTiersProps> = ({ onContinue
         'Direct developer support',
         'Early access to new features',
       ],
-      isActive: currentTier === TierLevel.WHALE,
-      showUpgrade: currentTier !== TierLevel.WHALE,
-      upgradeCost: calculateUpgradeCost(TierLevel.WHALE),
+      isActive: tier === TierLevel.WHALE,
+      showUpgrade: tier !== TierLevel.WHALE,
       isPremium: true,
-      onClick: () => currentTier === TierLevel.WHALE && onContinue(),
+      onClick: () => tier === TierLevel.WHALE && onContinue(),
     },
   ];
 
@@ -210,9 +185,7 @@ export const SubscriptionTiers: React.FC<SubscriptionTiersProps> = ({ onContinue
           <p className="text-bolt-elements-textSecondary max-w-xl mx-auto">
             Unlock premium AI models and exclusive features.
             <br /> Your current balance:
-            <span className="font-bold text-purple-500 ml-1">
-              {formatTokenAmount(parseFloat(walletState.balance || '0'))}
-            </span>
+            <span className="font-bold text-purple-500 ml-1">{formatTokenAmount(balance)}</span>
           </p>
         </div>
 

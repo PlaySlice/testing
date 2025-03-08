@@ -1,102 +1,87 @@
-import { parseTokenAccountResp } from '@raydium-io/raydium-sdk-v2';
-import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { Connection, PublicKey } from '@solana/web3.js';
-import { atom } from 'nanostores';
-import { toast } from 'react-toastify';
-import { logStore } from './logs';
+import { map } from 'nanostores';
 
-interface WalletState {
-  balance: string;
-  isLoading: boolean;
-  lastUpdated: number | null;
+export enum TierLevel {
+  FREE = 'free',
+  TIER1 = 'tier1',
+  TIER2 = 'tier2',
+  TIER3 = 'tier3',
+  WHALE = 'whale',
 }
 
-// Initialize with defaults
-const initialWalletState: WalletState = {
-  balance: '0',
-  isLoading: false,
-  lastUpdated: null,
+export const TIER_THRESHOLDS = {
+  [TierLevel.FREE]: 0,
+  [TierLevel.TIER1]: 100000,
+  [TierLevel.TIER2]: 350000,
+  [TierLevel.TIER3]: 1000000,
+  [TierLevel.WHALE]: 10000000,
 };
 
-export const walletStore = atom<WalletState>(initialWalletState);
-
-/**
- * Fetches the token balance for a connected wallet
- * @param publicKey The public key of the connected wallet
- * @param endpoint The Solana cluster endpoint (defaults to devnet)
- */
-export const fetchWalletBalance = async (
-  publicKey: PublicKey | null,
-  endpoint: string = 'https://api.devnet.solana.com',
-): Promise<void> => {
-  if (!publicKey) {
-    toast.error('Wallet not connected');
-    return;
-  }
-
-  try {
-    walletStore.set({ ...walletStore.get(), isLoading: true });
-
-    // Hardcoded token mint address
-    const tokenMintAddress = new PublicKey('66ce7iZ5uqnVbh4Rt5wChHWyVfUvv1LJrBo8o214pump');
-
-    // Get all token accounts for this wallet
-    const response = await fetchTokenAccountData(endpoint, publicKey);
-
-    // Default balance to 0
-    const mintAccount = response.tokenAccounts.filter(
-      (tokenAccount) => tokenAccount.mint.toBase58() === tokenMintAddress.toBase58(),
-    );
-
-    let tokenBalance = '0';
-
-    if (mintAccount.length > 0) {
-      tokenBalance = (parseFloat(mintAccount[0].amount) / 10 ** 6).toString();
-    }
-
-    console.log('tokenBalance', tokenBalance);
-
-    // Update the store with the new balance
-    walletStore.set({
-      balance: tokenBalance,
-      isLoading: false,
-      lastUpdated: Date.now(),
-    });
-
-    logStore.logInfo('Token balance updated', {
-      type: 'wallet',
-      message: `Token balance updated: ${tokenBalance}`,
-      balance: tokenBalance,
-    });
-  } catch (error) {
-    logStore.logError('Failed to fetch token balance', { error });
-    toast.error('Failed to fetch token balance');
-
-    walletStore.set({
-      ...walletStore.get(),
-      isLoading: false,
-    });
-  }
+// Centralized model access per tier
+export const TIER_MODEL_ACCESS = {
+  [TierLevel.FREE]: ['Google'],
+  [TierLevel.TIER1]: ['Google', 'Deepseek'],
+  [TierLevel.TIER2]: ['Google', 'Deepseek', 'Anthropic'],
+  [TierLevel.TIER3]: [
+    'Google',
+    'Deepseek',
+    'Anthropic',
+    'AmazonBedrock',
+    'Cohere',
+    'Github',
+    'Groq',
+    'HuggingFace',
+    'Hyperbolic',
+    'Mistral',
+    'OpenAI',
+    'OpenRouter',
+    'Perplexity',
+    'Together',
+    'xAI',
+  ],
+  [TierLevel.WHALE]: [
+    'Google',
+    'Deepseek',
+    'Anthropic',
+    'AmazonBedrock',
+    'Cohere',
+    'Github',
+    'Groq',
+    'HuggingFace',
+    'Hyperbolic',
+    'Mistral',
+    'OpenAI',
+    'OpenRouter',
+    'Perplexity',
+    'Together',
+    'xAI',
+  ],
 };
 
-export async function fetchTokenAccountData(endpoint: string, publicKey: PublicKey) {
-  const connection = new Connection(endpoint);
+export const walletStore = map({
+  balance: 0,
+  providers: ['Google'],
+  tier: TierLevel.FREE,
+  showSubscriptionTiers: false,
+});
 
-  const solAccountResp = await connection.getAccountInfo(publicKey);
-  const tokenAccountResp = await connection.getTokenAccountsByOwner(publicKey, {
-    programId: TOKEN_PROGRAM_ID,
-  });
-  const token2022Resp = await connection.getTokenAccountsByOwner(publicKey, {
-    programId: TOKEN_2022_PROGRAM_ID,
-  });
-  const tokenAccountData = parseTokenAccountResp({
-    owner: publicKey,
-    solAccountResp,
-    tokenAccountResp: {
-      context: tokenAccountResp.context,
-      value: [...tokenAccountResp.value, ...token2022Resp.value],
-    },
-  });
+export const updateWalletBalance = (balance: number) => {
+  let tier = TierLevel.FREE;
 
-  return tokenAccountData;
-}
+  if (balance >= TIER_THRESHOLDS[TierLevel.WHALE]) {
+    tier = TierLevel.WHALE;
+  } else if (balance >= TIER_THRESHOLDS[TierLevel.TIER3]) {
+    tier = TierLevel.TIER3;
+  } else if (balance >= TIER_THRESHOLDS[TierLevel.TIER2]) {
+    tier = TierLevel.TIER2;
+  } else if (balance >= TIER_THRESHOLDS[TierLevel.TIER1]) {
+    tier = TierLevel.TIER1;
+  }
+
+  const providers = [...TIER_MODEL_ACCESS[tier]];
+
+  walletStore.set({ ...walletStore.get(), balance, tier, providers });
+};
+
+export const setShowSubscriptionTiers = (show: boolean) => {
+  walletStore.set({ ...walletStore.get(), showSubscriptionTiers: show });
+};

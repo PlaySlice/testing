@@ -1,12 +1,14 @@
 import { json, type MetaFunction } from '@remix-run/cloudflare';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
+import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
+import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { clusterApiUrl } from '@solana/web3.js';
+import { useMemo } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
-import { BaseChat } from '~/components/chat/BaseChat';
+import { Chat } from '~/components/chat/Chat.client';
 import { Header } from '~/components/header/Header';
 import BackgroundRays from '~/components/ui/BackgroundRays';
-import { SolanaWalletProvider } from '~/components/ui/SolanaWalletProvider.client';
-
-import '@solana/wallet-adapter-react-ui/styles.css';
 
 export const meta: MetaFunction = () => {
   return [{ title: 'ez1' }, { name: 'description', content: 'Dream it, Build it.' }];
@@ -21,23 +23,35 @@ export const loader = () => json({});
  * to keep the UI clean and consistent with the design system.
  */
 export default function Index() {
-  const network = WalletAdapterNetwork.Mainnet;
+  // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'.
+  const network = WalletAdapterNetwork.Devnet;
+
+  // You can also provide a custom RPC endpoint.
+  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+
+  // @solana/wallet-adapter-wallets includes all the adapters but supports tree shaking and lazy loading.
+  // Only the wallets you configure here will be compiled into your application, and only the dependencies
+  // of wallets that your users connect to will be loaded.
+  const wallets = useMemo(
+    () => [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter({ network }),
+      // You can add more wallet adapters here based on your requirements
+    ],
+    [network],
+  );
 
   return (
     <div className="flex flex-col h-full w-full bg-bolt-elements-background-depth-1">
-      <ClientOnly fallback={<div>Loading wallet connect...</div>}>
-        {() => (
-          <SolanaWalletProvider network={network}>
+      <ConnectionProvider endpoint={endpoint}>
+        <WalletProvider wallets={wallets} autoConnect>
+          <WalletModalProvider>
+            <BackgroundRays />
             <Header />
-            <main className="flex flex-col items-center justify-center flex-grow w-full relative overflow-hidden">
-              <div className="absolute inset-0 overflow-hidden">
-                <BackgroundRays />
-              </div>
-              <BaseChat />
-            </main>
-          </SolanaWalletProvider>
-        )}
-      </ClientOnly>
+            <ClientOnly fallback={<></>}>{() => <Chat />}</ClientOnly>
+          </WalletModalProvider>
+        </WalletProvider>
+      </ConnectionProvider>
     </div>
   );
 }

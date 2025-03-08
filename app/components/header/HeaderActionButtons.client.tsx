@@ -241,7 +241,7 @@ export function HeaderActionButtons({}: HeaderActionButtonsProps) {
               <span className="mx-auto">{!connection.user ? 'No Account Connected' : 'Deploy to Netlify'}</span>
               {connection.user && <NetlifyDeploymentLink />}
             </Button>
-            <Button
+            {/* <Button
               active={false}
               disabled
               className="flex items-center w-full rounded-md px-4 py-2 text-sm text-bolt-elements-textTertiary gap-2"
@@ -272,6 +272,22 @@ export function HeaderActionButtons({}: HeaderActionButtonsProps) {
                 alt="vercel"
               />
               <span className="mx-auto">Deploy to Cloudflare (Coming Soon)</span>
+            </Button> */}
+            <Button
+              active={false}
+              disabled
+              className="flex items-center w-full rounded-md px-4 py-2 text-sm text-bolt-elements-textTertiary gap-2"
+            >
+              <span className="sr-only">Coming Soon</span>
+              <img
+                className="w-5 h-5"
+                height="24"
+                width="24"
+                crossOrigin="anonymous"
+                src="https://cdn.simpleicons.org/solana"
+                alt="solana"
+              />
+              <span className="mx-auto">Deploy on Solana (Coming Soon)</span>
             </Button>
           </div>
         )}

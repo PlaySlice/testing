@@ -11,28 +11,6 @@ import type { ContextAnnotation, ProgressAnnotation } from '~/types/context';
 import { WORK_DIR } from '~/utils/constants';
 import { createSummary } from '~/lib/.server/llm/create-summary';
 import { extractPropertiesFromMessage } from '~/lib/.server/llm/utils';
-import { Connection, PublicKey } from '@solana/web3.js';
-import { parseTokenAccountResp } from '@raydium-io/raydium-sdk-v2';
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
-import { TierLevel } from '~/lib/hooks/useTierAccess';
-
-// Define the token thresholds for each tier - keep in sync with useTierAccess.ts
-const TIER_THRESHOLDS = {
-  [TierLevel.FREE]: 0,
-  [TierLevel.TIER1]: 100000,
-  [TierLevel.TIER2]: 350000,
-  [TierLevel.TIER3]: 1000000,
-  [TierLevel.WHALE]: 10000000,
-};
-
-// Define model restrictions for each tier
-const TIER_MODEL_ACCESS = {
-  [TierLevel.FREE]: ['Google'],
-  [TierLevel.TIER1]: ['Google', 'Deepseek'],
-  [TierLevel.TIER2]: ['Google', 'Deepseek', 'Anthropic'],
-  [TierLevel.TIER3]: [], // Empty array means all models are allowed
-  [TierLevel.WHALE]: [], // Empty array means all models are allowed
-};
 
 export async function action(args: ActionFunctionArgs) {
   return chatAction(args);
@@ -59,67 +37,12 @@ function parseCookies(cookieHeader: string): Record<string, string> {
 }
 
 async function chatAction({ context, request }: ActionFunctionArgs) {
-  const { messages, files, promptId, contextOptimization, walletAddress, model, provider } = await request.json<{
+  const { messages, files, promptId, contextOptimization } = await request.json<{
     messages: Messages;
     files: any;
     promptId?: string;
     contextOptimization: boolean;
-    walletAddress?: string;
-    model?: string;
-    provider?: string;
   }>();
-
-  // Validate wallet and check tier access if wallet address is provided
-  if (model && provider) {
-    try {
-      let hasAccess = false;
-      let tier = TierLevel.FREE;
-
-      if (walletAddress) {
-        // If wallet address is provided, verify tier access
-        const publicKey = new PublicKey(walletAddress);
-
-        // Use generic property access to avoid type errors
-        const endpoint = 'https://mainnet.helius-rpc.com/?api-key=ca767d51-be57-44d3-b2b1-b370bc1f0234';
-
-        // Verify tier access
-        const result = await verifyTierAccess(publicKey, model, provider, endpoint);
-        hasAccess = result.hasAccess;
-        tier = result.tier;
-      } else {
-        /*
-         * If no wallet address, treat as free tier
-         * Only allow access to Google models
-         */
-        hasAccess = provider.toLowerCase() === 'google';
-        tier = TierLevel.FREE;
-      }
-
-      if (!hasAccess) {
-        // Return a simple error response
-        return new Response(
-          JSON.stringify({
-            error: `Your wallet does not have access to the ${model} model. Please upgrade to a higher tier.`,
-          }),
-          {
-            status: 403,
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          },
-        );
-      }
-
-      // Log tier access
-      logger.debug(`Wallet ${walletAddress} with tier ${tier} accessing model ${model}`);
-    } catch (error) {
-      /*
-       * If there's an error verifying the wallet, log it but continue with the request
-       * This ensures the API still works even if wallet verification fails
-       */
-      logger.error('Error verifying wallet tier access:', error);
-    }
-  }
 
   const cookieHeader = request.headers.get('Cookie');
   const apiKeys = JSON.parse(parseCookies(cookieHeader || '').apiKeys || '{}');
@@ -435,98 +358,4 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
       statusText: 'Internal Server Error',
     });
   }
-}
-
-// Helper function to verify tier access
-async function verifyTierAccess(
-  publicKey: PublicKey,
-  model: string,
-  provider: string,
-  endpoint: string,
-): Promise<{ tier: TierLevel; hasAccess: boolean }> {
-  try {
-    // Hardcoded token mint address (same as in wallet.ts)
-    const tokenMintAddress = new PublicKey('66ce7iZ5uqnVbh4Rt5wChHWyVfUvv1LJrBo8o214pump');
-
-    // Get token balance
-    const tokenAccountData = await fetchTokenAccountData(endpoint, publicKey);
-
-    const mintAccount = tokenAccountData.tokenAccounts.filter(
-      (tokenAccount) => tokenAccount.mint.toBase58() === tokenMintAddress.toBase58(),
-    );
-
-    let tokenBalance = 0;
-
-    if (mintAccount.length > 0) {
-      tokenBalance = parseFloat(mintAccount[0].amount) / 10 ** 6;
-    }
-
-    // Determine tier based on balance
-    let currentTier;
-
-    if (tokenBalance >= TIER_THRESHOLDS[TierLevel.WHALE]) {
-      currentTier = TierLevel.WHALE;
-    } else if (tokenBalance >= TIER_THRESHOLDS[TierLevel.TIER3]) {
-      currentTier = TierLevel.TIER3;
-    } else if (tokenBalance >= TIER_THRESHOLDS[TierLevel.TIER2]) {
-      currentTier = TierLevel.TIER2;
-    } else if (tokenBalance >= TIER_THRESHOLDS[TierLevel.TIER1]) {
-      currentTier = TierLevel.TIER1;
-    } else {
-      currentTier = TierLevel.FREE;
-    }
-
-    // Check if model access is allowed
-    const hasAccess = isModelAllowedForTier(model, provider, currentTier);
-
-    return { tier: currentTier, hasAccess };
-  } catch (error) {
-    logger.error('Error verifying wallet tier access:', error);
-    throw error;
-  }
-}
-
-// Helper function to check if model is allowed for tier
-function isModelAllowedForTier(modelName: string, providerName: string, tier: TierLevel): boolean {
-  // Higher tiers (TIER3 and WHALE) have access to all models
-  if (tier === TierLevel.TIER3 || tier === TierLevel.WHALE) {
-    return true;
-  }
-
-  // For specific tiers, check against allowed providers
-  const allowedProviders = TIER_MODEL_ACCESS[tier];
-
-  // If allowedProviders is empty, all models are allowed for this tier
-  if (!allowedProviders || allowedProviders.length === 0) {
-    return true;
-  }
-
-  // Normalize the provider name for comparison
-  const normalizedProviderName = providerName.toLowerCase();
-
-  // Check if the provider is allowed for this tier
-  return allowedProviders.some((allowedProvider) => normalizedProviderName.includes(allowedProvider.toLowerCase()));
-}
-
-// Helper function to fetch token account data
-async function fetchTokenAccountData(endpoint: string, publicKey: PublicKey) {
-  const connection = new Connection(endpoint);
-
-  const solAccountResp = await connection.getAccountInfo(publicKey);
-  const tokenAccountResp = await connection.getTokenAccountsByOwner(publicKey, {
-    programId: TOKEN_PROGRAM_ID,
-  });
-  const token2022Resp = await connection.getTokenAccountsByOwner(publicKey, {
-    programId: TOKEN_2022_PROGRAM_ID,
-  });
-  const tokenAccountData = parseTokenAccountResp({
-    owner: publicKey,
-    solAccountResp,
-    tokenAccountResp: {
-      context: tokenAccountResp.context,
-      value: [...tokenAccountResp.value, ...token2022Resp.value],
-    },
-  });
-
-  return tokenAccountData;
 }

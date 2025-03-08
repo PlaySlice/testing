@@ -1,19 +1,10 @@
-import { useWallet } from '@solana/wallet-adapter-react';
-import type { KeyboardEvent } from 'react';
-import { useEffect, useRef, useState } from 'react';
-import { TierLevel } from '~/lib/hooks/useTierAccess';
-import type { ModelInfo } from '~/lib/modules/llm/types';
 import type { ProviderInfo } from '~/types/model';
+import { useEffect, useState, useRef } from 'react';
+import type { KeyboardEvent } from 'react';
+import type { ModelInfo } from '~/lib/modules/llm/types';
 import { classNames } from '~/utils/classNames';
-
-// Define the interface for the wallet verification response
-interface WalletVerificationResponse {
-  hasAccess: boolean;
-  tier: TierLevel;
-  balance?: string;
-  error?: string;
-  timestamp?: number;
-}
+import { useStore } from '@nanostores/react';
+import { walletStore } from '~/lib/stores/wallet';
 
 interface ModelSelectorProps {
   model?: string;
@@ -24,7 +15,6 @@ interface ModelSelectorProps {
   providerList: ProviderInfo[];
   apiKeys: Record<string, string>;
   modelLoading?: string;
-  onAccessChange?: (hasAccess: boolean) => void;
 }
 
 export const ModelSelector = ({
@@ -35,136 +25,21 @@ export const ModelSelector = ({
   modelList,
   providerList,
   modelLoading,
-  onAccessChange,
 }: ModelSelectorProps) => {
   const [modelSearchQuery, setModelSearchQuery] = useState('');
+  const [providerSearchQuery, setProviderSearchQuery] = useState('');
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [focusedProviderIndex, setFocusedProviderIndex] = useState(-1);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const providerSearchInputRef = useRef<HTMLInputElement>(null);
   const optionsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const providerOptionsRef = useRef<(HTMLDivElement | null)[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const providerDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Get wallet and tier information for model access
-  const { publicKey } = useWallet();
-
-  // Pre-compute model access information at the component level
-  const [modelAccessMap, setModelAccessMap] = useState<Record<string, { hasAccess: boolean; isLoading: boolean }>>({});
-
-  // Fetch access status for all models when provider changes
-  useEffect(() => {
-    console.log('All models (unfiltered):', modelList);
-
-    if (!provider) {
-      // If no provider, treat all models as accessible
-      const defaultAccess = modelList.reduce(
-        (acc, model) => {
-          acc[`${model.provider}:${model.name}`] = { hasAccess: true, isLoading: false };
-          return acc;
-        },
-        {} as Record<string, { hasAccess: boolean; isLoading: boolean }>,
-      );
-
-      setModelAccessMap(defaultAccess);
-      console.log('No provider, default access map:', defaultAccess);
-
-      return;
-    }
-
-    if (!publicKey) {
-      // If no wallet is connected, only allow access to free tier models (Google)
-      const freeAccess = modelList.reduce(
-        (acc, model) => {
-          // Only Google models are accessible in free tier
-          const hasAccess = model.provider.toLowerCase() === 'google';
-          acc[`${model.provider}:${model.name}`] = { hasAccess, isLoading: false };
-
-          return acc;
-        },
-        {} as Record<string, { hasAccess: boolean; isLoading: boolean }>,
-      );
-
-      setModelAccessMap(freeAccess);
-      console.log('No wallet connected, free tier access map:', freeAccess);
-
-      // Notify parent about access status for current model
-      if (model && onAccessChange) {
-        const modelInfo = modelList.find((m) => m.name === model && m.provider === provider.name);
-
-        if (modelInfo) {
-          const hasAccess = modelInfo.provider.toLowerCase() === 'google';
-          onAccessChange(hasAccess);
-        }
-      }
-
-      return;
-    }
-
-    // Only check models for the current provider
-    const providerModels = modelList.filter((m) => m.provider === provider.name);
-
-    // Initialize with loading state
-    const initialState = providerModels.reduce(
-      (acc, model) => {
-        acc[`${model.provider}:${model.name}`] = { hasAccess: false, isLoading: true };
-        return acc;
-      },
-      {} as Record<string, { hasAccess: boolean; isLoading: boolean }>,
-    );
-
-    setModelAccessMap(initialState);
-
-    // Fetch access for each model
-    const checkModelAccess = async () => {
-      if (!publicKey) {
-        return;
-      }
-
-      const walletAddress = publicKey.toString();
-      const accessPromises = providerModels.map(async (modelInfo) => {
-        try {
-          const response = await fetch(
-            `/api/verify-wallet?wallet=${walletAddress}&model=${modelInfo.name}&provider=${modelInfo.provider}`,
-          );
-
-          if (!response.ok) {
-            throw new Error('Failed to verify access');
-          }
-
-          const data = (await response.json()) as WalletVerificationResponse;
-
-          return {
-            modelKey: `${modelInfo.provider}:${modelInfo.name}`,
-            hasAccess: data.hasAccess,
-            isLoading: false,
-          };
-        } catch (error) {
-          console.error('Error checking model access:', error);
-          return {
-            modelKey: `${modelInfo.provider}:${modelInfo.name}`,
-            hasAccess: true, // Default to allowing in case of error
-            isLoading: false,
-          };
-        }
-      });
-
-      const results = await Promise.all(accessPromises);
-
-      setModelAccessMap((prev) => {
-        const newMap = { ...prev };
-        results.forEach((result) => {
-          newMap[result.modelKey] = {
-            hasAccess: result.hasAccess,
-            isLoading: result.isLoading,
-          };
-        });
-
-        return newMap;
-      });
-    };
-
-    // When results come back, log them
-    checkModelAccess();
-  }, [provider, publicKey, modelList]);
+  const { providers: enabledProviders } = useStore(walletStore);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -172,10 +47,13 @@ export const ModelSelector = ({
         setIsModelDropdownOpen(false);
         setModelSearchQuery('');
       }
+      if (providerDropdownRef.current && !providerDropdownRef.current.contains(event.target as Node)) {
+        setIsProviderDropdownOpen(false);
+        setProviderSearchQuery('');
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
@@ -188,223 +66,130 @@ export const ModelSelector = ({
         model.name.toLowerCase().includes(modelSearchQuery.toLowerCase()),
     );
 
-  // Render a model option with tier access indicators - now using pre-computed access data
-  const renderModelOption = (modelInfo: ModelInfo, isSelected: boolean, isFocused: boolean) => {
-    const modelKey = `${modelInfo.provider}:${modelInfo.name}`;
-    const { hasAccess = true, isLoading = false } = modelAccessMap[modelKey] || { hasAccess: true, isLoading: false };
+  // Filter providers based on search query
+  const filteredProviders = [...providerList].filter((provider) =>
+    provider.name.toLowerCase().includes(providerSearchQuery.toLowerCase()),
+  );
 
-    // Log model info when rendering
-    console.log(`Rendering model ${modelInfo.name}:`, {
-      modelKey,
-      hasAccess,
-      isLoading,
-      isSelected,
-      isFocused,
-    });
-
-    return (
-      <div
-        className={classNames(
-          'px-4 py-2 transition-colors',
-          isSelected || isFocused ? 'bg-bolt-elements-background-depth-3' : '',
-          !hasAccess && !isLoading ? 'opacity-50' : '',
-
-          // Only show cursor-pointer for models that are accessible or still loading
-          hasAccess || isLoading ? 'cursor-pointer' : 'cursor-not-allowed',
-        )}
-        onClick={hasAccess || isLoading ? undefined : (e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-bolt-elements-textPrimary">{modelInfo.label}</span>
-          {!hasAccess && !isLoading && (
-            <div className="tier-lock-indicator flex items-center">
-              <span className="lock-icon text-purple-500 mr-1 i-ph:lock-key-fill" />
-              <span className="upgrade-text text-xs text-purple-400">Upgrade</span>
-            </div>
-          )}
-          {isLoading && <span className="text-xs text-gray-400">Verifying...</span>}
-        </div>
-      </div>
-    );
-  };
-
-  // Reset focused index when search query changes or dropdown opens/closes
+  // Reset focused indices when search queries change or dropdowns open/close
   useEffect(() => {
     setFocusedIndex(-1);
   }, [modelSearchQuery, isModelDropdownOpen]);
 
-  // Focus search input when dropdown opens
+  useEffect(() => {
+    setFocusedProviderIndex(-1);
+  }, [providerSearchQuery, isProviderDropdownOpen]);
+
+  // Focus search inputs when dropdowns open
   useEffect(() => {
     if (isModelDropdownOpen && searchInputRef.current) {
       searchInputRef.current.focus();
     }
-  }, [isModelDropdownOpen]);
-
-  // Handle keyboard navigation
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (!isModelDropdownOpen) {
-      return;
+    if (isProviderDropdownOpen && providerSearchInputRef.current) {
+      providerSearchInputRef.current.focus();
     }
+  }, [isModelDropdownOpen, isProviderDropdownOpen]);
+
+  // Handle keyboard navigation for models
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (!isModelDropdownOpen) return;
 
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setFocusedIndex((prev) => {
-          const next = prev + 1;
-
-          if (next >= filteredModels.length) {
-            return 0;
-          }
-
-          return next;
-        });
+        setFocusedIndex((prev) => (prev + 1 >= filteredModels.length ? 0 : prev + 1));
         break;
-
       case 'ArrowUp':
         e.preventDefault();
-        setFocusedIndex((prev) => {
-          const next = prev - 1;
-
-          if (next < 0) {
-            return filteredModels.length - 1;
-          }
-
-          return next;
-        });
+        setFocusedIndex((prev) => (prev - 1 < 0 ? filteredModels.length - 1 : prev - 1));
         break;
-
       case 'Enter':
         e.preventDefault();
-
         if (focusedIndex >= 0 && focusedIndex < filteredModels.length) {
-          const selectedModel = filteredModels[focusedIndex];
-
-          // Check if user has access to this model before proceeding
-          const modelKey = `${selectedModel.provider}:${selectedModel.name}`;
-          const { hasAccess = true, isLoading = false } = modelAccessMap[modelKey] || {
-            hasAccess: true,
-            isLoading: false,
-          };
-
-          console.log(
-            `Model selected via keyboard: ${selectedModel.name}, hasAccess: ${hasAccess}, isLoading: ${isLoading}`,
-          );
-
-          // Only select the model and close dropdown if user has access or if still loading
-          if (hasAccess || isLoading) {
-            setModel?.(selectedModel.name);
-            setIsModelDropdownOpen(false);
-            setModelSearchQuery('');
-          } else {
-            console.log('Keyboard model selection prevented - user does not have access:', selectedModel.name);
-          }
+          setModel?.(filteredModels[focusedIndex].name);
+          setIsModelDropdownOpen(false);
+          setModelSearchQuery('');
         }
-
         break;
-
       case 'Escape':
         e.preventDefault();
         setIsModelDropdownOpen(false);
         setModelSearchQuery('');
         break;
+    }
+  };
 
-      case 'Tab':
-        if (!e.shiftKey && focusedIndex === filteredModels.length - 1) {
-          setIsModelDropdownOpen(false);
+  // Handle keyboard navigation for providers
+  const handleProviderKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (!isProviderDropdownOpen) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setFocusedProviderIndex((prev) => (prev + 1 >= filteredProviders.length ? 0 : prev + 1));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setFocusedProviderIndex((prev) => (prev - 1 < 0 ? filteredProviders.length - 1 : prev - 1));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (focusedProviderIndex >= 0 && focusedProviderIndex < filteredProviders.length) {
+          const selectedProvider = filteredProviders[focusedProviderIndex];
+          if (enabledProviders.includes(selectedProvider.name)) {
+            setProvider?.(selectedProvider);
+            const firstModel = modelList.find((m) => m.provider === selectedProvider.name);
+            if (firstModel) setModel?.(firstModel.name);
+            setIsProviderDropdownOpen(false);
+            setProviderSearchQuery('');
+          }
         }
-
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setIsProviderDropdownOpen(false);
+        setProviderSearchQuery('');
         break;
     }
   };
 
-  // Focus the selected option
+  // Focus the selected options
   useEffect(() => {
     if (focusedIndex >= 0 && optionsRef.current[focusedIndex]) {
       optionsRef.current[focusedIndex]?.scrollIntoView({ block: 'nearest' });
     }
-  }, [focusedIndex]);
+    if (focusedProviderIndex >= 0 && providerOptionsRef.current[focusedProviderIndex]) {
+      providerOptionsRef.current[focusedProviderIndex]?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [focusedIndex, focusedProviderIndex]);
 
   // Update enabled providers when cookies change
   useEffect(() => {
-    // If current provider is disabled, switch to first enabled provider
-    if (providerList.length === 0) {
-      return;
-    }
+    if (providerList.length === 0) return;
 
     if (provider && !providerList.map((p) => p.name).includes(provider.name)) {
       const firstEnabledProvider = providerList[0];
       setProvider?.(firstEnabledProvider);
 
-      // Also update the model to the first available one for the new provider
       const firstModel = modelList.find((m) => m.provider === firstEnabledProvider.name);
-
       if (firstModel) {
         setModel?.(firstModel.name);
       }
     }
-  }, [providerList, provider, setProvider, modelList, setModel]);
 
-  // Add logging when a model is selected
-  const handleModelSelect = (selectedModel: string) => {
-    if (setModel) {
-      const modelInfo = modelList.find((m) => m.name === selectedModel);
-
-      if (modelInfo) {
-        const modelKey = `${modelInfo.provider}:${modelInfo.name}`;
-        const { hasAccess = true, isLoading = false } = modelAccessMap[modelKey] || {
-          hasAccess: true,
-          isLoading: false,
-        };
-
-        console.log('Model selected:', {
-          name: selectedModel,
-          provider: modelInfo.provider,
-          key: modelKey,
-          hasAccess,
-          isLoading,
-          fullAccessMap: modelAccessMap,
-        });
-
-        // Only set the model if the user has access or if access is still being verified
-        if (hasAccess || isLoading) {
-          setModel(selectedModel);
-        } else {
-          console.log('Model selection prevented - user does not have access:', selectedModel);
-        }
-      } else {
-        setModel(selectedModel);
-      }
-    }
-  };
-
-  // Add more comprehensive model access logging
-  useEffect(() => {
-    // Log the current model access map whenever it changes
-    console.log('Model access map updated:', modelAccessMap);
-
-    // If there's a currently selected model, log its access status
-    if (model && provider) {
-      const modelInfo = modelList.find((m) => m.name === model && m.provider === provider.name);
-
-      if (modelInfo) {
-        const modelKey = `${modelInfo.provider}:${modelInfo.name}`;
-        const accessStatus = modelAccessMap[modelKey];
-        console.log('Current selected model access status:', {
-          model,
-          provider: provider.name,
-          modelKey,
-          accessStatus,
-          found: !!accessStatus,
-        });
-
-        // Notify the parent component about the access state
-        if (onAccessChange) {
-          const hasAccess = accessStatus?.hasAccess ?? true;
-          onAccessChange(hasAccess);
+    // Check if current model is from an enabled provider
+    const currentModel = modelList.find((m) => m.name === model);
+    if (currentModel && !enabledProviders.includes(currentModel.provider)) {
+      const firstEnabledProvider = providerList.find((p) => enabledProviders.includes(p.name));
+      if (firstEnabledProvider) {
+        setProvider?.(firstEnabledProvider);
+        const firstModel = modelList.find((m) => m.provider === firstEnabledProvider.name);
+        if (firstModel) {
+          setModel?.(firstModel.name);
         }
       }
     }
-  }, [modelAccessMap, model, provider, modelList, onAccessChange]);
+  }, [providerList, provider, setProvider, modelList, setModel, enabledProviders]);
 
   if (providerList.length === 0) {
     return (
@@ -419,29 +204,130 @@ export const ModelSelector = ({
 
   return (
     <div className="mb-2 flex gap-2 flex-col sm:flex-row">
-      <select
-        value={provider?.name ?? ''}
-        onChange={(e) => {
-          const newProvider = providerList.find((p: ProviderInfo) => p.name === e.target.value);
+      <div className="relative flex-1" onKeyDown={handleProviderKeyDown} ref={providerDropdownRef}>
+        <div
+          className={classNames(
+            'w-full p-2 rounded-lg border border-bolt-elements-borderColor',
+            'bg-bolt-elements-prompt-background text-bolt-elements-textPrimary',
+            'focus-within:outline-none focus-within:ring-2 focus-within:ring-bolt-elements-focus',
+            'transition-all cursor-pointer',
+            isProviderDropdownOpen ? 'ring-2 ring-bolt-elements-focus' : undefined,
+          )}
+          onClick={() => setIsProviderDropdownOpen(!isProviderDropdownOpen)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setIsProviderDropdownOpen(!isProviderDropdownOpen);
+            }
+          }}
+          role="combobox"
+          aria-expanded={isProviderDropdownOpen}
+          aria-controls="provider-listbox"
+          aria-haspopup="listbox"
+          tabIndex={0}
+        >
+          <div className="flex items-center justify-between">
+            <div className="truncate">{provider?.name || 'Select provider'}</div>
+            <div
+              className={classNames(
+                'i-ph:caret-down w-4 h-4 text-bolt-elements-textSecondary opacity-75',
+                isProviderDropdownOpen ? 'rotate-180' : undefined,
+              )}
+            />
+          </div>
+        </div>
 
-          if (newProvider && setProvider) {
-            setProvider(newProvider);
-          }
+        {isProviderDropdownOpen && (
+          <div
+            className="absolute z-10 w-full mt-1 py-1 rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-background-depth-2 shadow-lg"
+            role="listbox"
+            id="provider-listbox"
+          >
+            <div className="px-2 pb-2">
+              <div className="relative">
+                <input
+                  ref={providerSearchInputRef}
+                  type="text"
+                  value={providerSearchQuery}
+                  onChange={(e) => setProviderSearchQuery(e.target.value)}
+                  placeholder="Search providers..."
+                  className={classNames(
+                    'w-full pl-8 pr-3 py-1.5 rounded-md text-sm',
+                    'bg-bolt-elements-background-depth-2 border border-bolt-elements-borderColor',
+                    'text-bolt-elements-textPrimary placeholder:text-bolt-elements-textTertiary',
+                    'focus:outline-none focus:ring-2 focus:ring-bolt-elements-focus',
+                    'transition-all',
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                  role="searchbox"
+                  aria-label="Search providers"
+                />
+                <div className="absolute left-2.5 top-1/2 -translate-y-1/2">
+                  <span className="i-ph:magnifying-glass text-bolt-elements-textTertiary" />
+                </div>
+              </div>
+            </div>
 
-          const firstModel = [...modelList].find((m) => m.provider === e.target.value);
-
-          if (firstModel && setModel) {
-            setModel(firstModel.name);
-          }
-        }}
-        className="flex-1 p-2 rounded-lg border border-bolt-elements-borderColor bg-bolt-elements-prompt-background text-bolt-elements-textPrimary focus:outline-none focus:ring-2 focus:ring-bolt-elements-focus transition-all"
-      >
-        {providerList.map((provider: ProviderInfo) => (
-          <option key={provider.name} value={provider.name}>
-            {provider.name}
-          </option>
-        ))}
-      </select>
+            <div
+              className={classNames(
+                'max-h-60 overflow-y-auto',
+                'sm:scrollbar-none',
+                '[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar]:h-2',
+                '[&::-webkit-scrollbar-thumb]:bg-bolt-elements-borderColor',
+                '[&::-webkit-scrollbar-thumb]:hover:bg-bolt-elements-borderColorHover',
+                '[&::-webkit-scrollbar-thumb]:rounded-full',
+                '[&::-webkit-scrollbar-track]:bg-bolt-elements-background-depth-2',
+                '[&::-webkit-scrollbar-track]:rounded-full',
+                'sm:[&::-webkit-scrollbar]:w-1.5 sm:[&::-webkit-scrollbar]:h-1.5',
+                'sm:hover:[&::-webkit-scrollbar-thumb]:bg-bolt-elements-borderColor/50',
+                'sm:hover:[&::-webkit-scrollbar-thumb:hover]:bg-bolt-elements-borderColor',
+                'sm:[&::-webkit-scrollbar-track]:bg-transparent',
+              )}
+            >
+              {filteredProviders.map((providerOption, index) => {
+                const isEnabled = enabledProviders.includes(providerOption.name);
+                return (
+                  <div
+                    ref={(el) => (providerOptionsRef.current[index] = el)}
+                    key={index}
+                    role="option"
+                    aria-selected={provider?.name === providerOption.name}
+                    className={classNames(
+                      'px-3 py-2 text-sm cursor-pointer flex items-center justify-between',
+                      'hover:bg-bolt-elements-background-depth-3',
+                      isEnabled ? 'text-bolt-elements-textPrimary' : 'text-bolt-elements-textTertiary',
+                      'outline-none',
+                      provider?.name === providerOption.name || focusedProviderIndex === index
+                        ? 'bg-bolt-elements-background-depth-2'
+                        : undefined,
+                      focusedProviderIndex === index ? 'ring-1 ring-inset ring-bolt-elements-focus' : undefined,
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isEnabled) {
+                        setProvider?.(providerOption);
+                        const firstModel = modelList.find((m) => m.provider === providerOption.name);
+                        if (firstModel) setModel?.(firstModel.name);
+                        setIsProviderDropdownOpen(false);
+                        setProviderSearchQuery('');
+                      }
+                    }}
+                    tabIndex={focusedProviderIndex === index ? 0 : -1}
+                  >
+                    <span>{providerOption.name}</span>
+                    {!isEnabled && (
+                      <div className="tier-lock-indicator flex items-center">
+                        <span className="lock-icon text-purple-500 mr-1 i-ph:lock-key-fill" />
+                        <span className="upgrade-text text-xs text-purple-400">Upgrade</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="relative flex-1 lg:max-w-[70%]" onKeyDown={handleKeyDown} ref={dropdownRef}>
         <div
@@ -535,7 +421,7 @@ export const ModelSelector = ({
                     role="option"
                     aria-selected={model === modelOption.name}
                     className={classNames(
-                      'px-3 py-2',
+                      'px-3 py-2 text-sm cursor-pointer',
                       'hover:bg-bolt-elements-background-depth-3',
                       'text-bolt-elements-textPrimary',
                       'outline-none',
@@ -546,30 +432,13 @@ export const ModelSelector = ({
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
-
-                      // Check if user has access to this model before proceeding
-                      const modelKey = `${modelOption.provider}:${modelOption.name}`;
-                      const { hasAccess = true, isLoading = false } = modelAccessMap[modelKey] || {
-                        hasAccess: true,
-                        isLoading: false,
-                      };
-
-                      console.log(
-                        `Model clicked: ${modelOption.name}, hasAccess: ${hasAccess}, isLoading: ${isLoading}`,
-                      );
-
-                      // Only select the model and close dropdown if user has access or if still loading
-                      if (hasAccess || isLoading) {
-                        handleModelSelect(modelOption.name);
-                        setIsModelDropdownOpen(false);
-                        setModelSearchQuery('');
-                      } else {
-                        console.log('Model selection prevented - user does not have access:', modelOption.name);
-                      }
+                      setModel?.(modelOption.name);
+                      setIsModelDropdownOpen(false);
+                      setModelSearchQuery('');
                     }}
                     tabIndex={focusedIndex === index ? 0 : -1}
                   >
-                    {renderModelOption(modelOption, model === modelOption.name, focusedIndex === index)}
+                    {modelOption.label}
                   </div>
                 ))
               )}
