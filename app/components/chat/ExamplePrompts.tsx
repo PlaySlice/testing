@@ -1,9 +1,8 @@
 import React from 'react';
 
 const EXAMPLE_PROMPTS = [
-  { text: 'Build a todo app in React using Tailwind' },
-  { text: 'Build a simple blog using Astro' },
-  { text: 'Create a cookie consent form using Material UI' },
+  { text: 'Design an interactive fiction storytelling platform with branching choices using Three.js' },
+  { text: 'Build a collaborative pixel art drawing tool with real-time updates via WebSockets' },
   { text: 'Make a space invaders game' },
   { text: 'Make a Tic Tac Toe game in html, css and js only' },
 ];

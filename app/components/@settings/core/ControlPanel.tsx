@@ -8,7 +8,7 @@ import { TabManagement } from '~/components/@settings/shared/components/TabManag
 import { TabTile } from '~/components/@settings/shared/components/TabTile';
 import { useUpdateCheck } from '~/lib/hooks/useUpdateCheck';
 import { useFeatures } from '~/lib/hooks/useFeatures';
-import { useNotifications } from '~/lib/hooks/useNotifications';
+// Removed: import { useNotifications } from '~/lib/hooks/useNotifications';
 import { useConnectionStatus } from '~/lib/hooks/useConnectionStatus';
 import { useDebugStatus } from '~/lib/hooks/useDebugStatus';
 import {
@@ -24,19 +24,18 @@ import { DialogTitle } from '~/components/ui/Dialog';
 import { AvatarDropdown } from './AvatarDropdown';
 import BackgroundRays from '~/components/ui/BackgroundRays';
 
-// Import all tab components
+// Import remaining tab components
 import ProfileTab from '~/components/@settings/tabs/profile/ProfileTab';
 import SettingsTab from '~/components/@settings/tabs/settings/SettingsTab';
-import NotificationsTab from '~/components/@settings/tabs/notifications/NotificationsTab';
+// Removed: import NotificationsTab from '~/components/@settings/tabs/notifications/NotificationsTab';
 import FeaturesTab from '~/components/@settings/tabs/features/FeaturesTab';
 import DataTab from '~/components/@settings/tabs/data/DataTab';
 import DebugTab from '~/components/@settings/tabs/debug/DebugTab';
-import { EventLogsTab } from '~/components/@settings/tabs/event-logs/EventLogsTab';
+// Removed: import { EventLogsTab } from '~/components/@settings/tabs/event-logs/EventLogsTab';
 import UpdateTab from '~/components/@settings/tabs/update/UpdateTab';
 import ConnectionsTab from '~/components/@settings/tabs/connections/ConnectionsTab';
-import CloudProvidersTab from '~/components/@settings/tabs/providers/cloud/CloudProvidersTab';
-import ServiceStatusTab from '~/components/@settings/tabs/providers/status/ServiceStatusTab';
-import LocalProvidersTab from '~/components/@settings/tabs/providers/local/LocalProvidersTab';
+// Removed: import CloudProvidersTab from '~/components/@settings/tabs/providers/cloud/CloudProvidersTab';
+// Removed: import LocalProvidersTab from '~/components/@settings/tabs/providers/local/LocalProvidersTab';
 import TaskManagerTab from '~/components/@settings/tabs/task-manager/TaskManagerTab';
 
 interface ControlPanelProps {
@@ -69,22 +68,18 @@ interface AnimatedSwitchProps {
 const TAB_DESCRIPTIONS: Record<TabType, string> = {
   profile: 'Manage your profile and account settings',
   settings: 'Configure application preferences',
-  notifications: 'View and manage your notifications',
   features: 'Explore new and upcoming features',
   data: 'Manage your data and storage',
-  'cloud-providers': 'Configure cloud AI providers and models',
-  'local-providers': 'Configure local AI providers and models',
-  'service-status': 'Monitor cloud LLM service status',
   connection: 'Check connection status and settings',
   debug: 'Debug tools and system information',
-  'event-logs': 'View system events and logs',
   update: 'Check for updates and release notes',
   'task-manager': 'Monitor system resources and processes',
   'tab-management': 'Configure visible tabs and their order',
+  'service-status': 'Monitor cloud LLM service status',
 };
 
-// Beta status for experimental features
-const BETA_TABS = new Set<TabType>(['task-manager', 'service-status', 'update', 'local-providers']);
+// Beta status for experimental features (removed unwanted tabs)
+const BETA_TABS = new Set<TabType>(['task-manager', 'service-status', 'update']);
 
 const BetaLabel = () => (
   <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-full bg-purple-500/10 dark:bg-purple-500/20">
@@ -166,7 +161,7 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
   // Status hooks
   const { hasUpdate, currentVersion, acknowledgeUpdate } = useUpdateCheck();
   const { hasNewFeatures, unviewedFeatures, acknowledgeAllFeatures } = useFeatures();
-  const { hasUnreadNotifications, unreadNotifications, markAllAsRead } = useNotifications();
+  // Removed notifications hook
   const { hasConnectionIssues, currentIssue, acknowledgeIssue } = useConnectionStatus();
   const { hasActiveWarnings, activeIssues, acknowledgeAllIssues } = useDebugStatus();
 
@@ -175,24 +170,30 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
     return new Map(DEFAULT_TAB_CONFIG.map((tab) => [tab.id, tab]));
   }, []);
 
+  // Define removed tab IDs for filtering
+  const removedTabIds = new Set<TabType>([
+    'notifications',
+    'cloud-providers',
+    'local-providers',
+    'event-logs',
+  ]);
+
   // Add visibleTabs logic using useMemo with optimized calculations
   const visibleTabs = useMemo(() => {
     if (!tabConfiguration?.userTabs || !Array.isArray(tabConfiguration.userTabs)) {
       console.warn('Invalid tab configuration, resetting to defaults');
       resetTabConfiguration();
-
       return [];
     }
 
-    const notificationsDisabled = profile?.preferences?.notifications === false;
-
-    // In developer mode, show ALL tabs without restrictions
+    // In developer mode, show ALL tabs without restrictions (except removed ones)
     if (developerMode) {
       const seenTabs = new Set<TabType>();
       const devTabs: ExtendedTabConfig[] = [];
 
       // Process tabs in order of priority: developer, user, default
       const processTab = (tab: BaseTabConfig) => {
+        if (removedTabIds.has(tab.id)) return;
         if (!seenTabs.has(tab.id)) {
           seenTabs.add(tab.id);
           devTabs.push({
@@ -204,7 +205,6 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
         }
       };
 
-      // Process tabs in priority order
       tabConfiguration.developerTabs?.forEach((tab) => processTab(tab as BaseTabConfig));
       tabConfiguration.userTabs.forEach((tab) => processTab(tab as BaseTabConfig));
       DEFAULT_TAB_CONFIG.forEach((tab) => processTab(tab as BaseTabConfig));
@@ -221,17 +221,11 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
       return devTabs.sort((a, b) => a.order - b.order);
     }
 
-    // Optimize user mode tab filtering
+    // Optimize user mode tab filtering, filtering out removed tabs
     return tabConfiguration.userTabs
       .filter((tab) => {
-        if (!tab?.id) {
-          return false;
-        }
-
-        if (tab.id === 'notifications' && notificationsDisabled) {
-          return false;
-        }
-
+        if (!tab?.id) return false;
+        if (removedTabIds.has(tab.id)) return false;
         return tab.visible && tab.window === 'user';
       })
       .sort((a, b) => a.order - b.order);
@@ -313,28 +307,24 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
         return <ProfileTab />;
       case 'settings':
         return <SettingsTab />;
-      case 'notifications':
-        return <NotificationsTab />;
+      // Removed notifications case
       case 'features':
         return <FeaturesTab />;
       case 'data':
         return <DataTab />;
-      case 'cloud-providers':
-        return <CloudProvidersTab />;
-      case 'local-providers':
-        return <LocalProvidersTab />;
+      // Removed cloud-providers case
+      // Removed local-providers case
       case 'connection':
         return <ConnectionsTab />;
       case 'debug':
         return <DebugTab />;
-      case 'event-logs':
-        return <EventLogsTab />;
+      // Removed event-logs case
       case 'update':
         return <UpdateTab />;
       case 'task-manager':
         return <TaskManagerTab />;
       case 'service-status':
-        return <ServiceStatusTab />;
+        return <ConnectionsTab />;
       default:
         return null;
     }
@@ -346,8 +336,7 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
         return hasUpdate;
       case 'features':
         return hasNewFeatures;
-      case 'notifications':
-        return hasUnreadNotifications;
+      // Removed notifications case
       case 'connection':
         return hasConnectionIssues;
       case 'debug':
@@ -363,8 +352,7 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
         return `New update available (v${currentVersion})`;
       case 'features':
         return `${unviewedFeatures.length} new feature${unviewedFeatures.length === 1 ? '' : 's'} to explore`;
-      case 'notifications':
-        return `${unreadNotifications.length} unread notification${unreadNotifications.length === 1 ? '' : 's'}`;
+      // Removed notifications case
       case 'connection':
         return currentIssue === 'disconnected'
           ? 'Connection lost'
@@ -374,7 +362,6 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
       case 'debug': {
         const warnings = activeIssues.filter((i) => i.type === 'warning').length;
         const errors = activeIssues.filter((i) => i.type === 'error').length;
-
         return `${warnings} warning${warnings === 1 ? '' : 's'}, ${errors} error${errors === 1 ? '' : 's'}`;
       }
       default:
@@ -387,7 +374,7 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
     setActiveTab(tabId);
     setShowTabManagement(false);
 
-    // Acknowledge notifications based on tab
+    // Acknowledge actions based on tab
     switch (tabId) {
       case 'update':
         acknowledgeUpdate();
@@ -395,9 +382,7 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
       case 'features':
         acknowledgeAllFeatures();
         break;
-      case 'notifications':
-        markAllAsRead();
-        break;
+      // Removed notifications case
       case 'connection':
         acknowledgeIssue();
         break;
@@ -466,6 +451,7 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
 
                   <div className="flex items-center gap-6">
                     {/* Mode Toggle */}
+                    {/*
                     <div className="flex items-center gap-2 min-w-[140px] border-r border-gray-200 dark:border-gray-800 pr-6">
                       <AnimatedSwitch
                         id="developer-mode"
@@ -474,11 +460,14 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
                         label={developerMode ? 'Developer Mode' : 'User Mode'}
                       />
                     </div>
+                    */}
 
                     {/* Avatar and Dropdown */}
+                    {/*
                     <div className="border-l border-gray-200 dark:border-gray-800 pl-6">
                       <AvatarDropdown onSelectTab={handleTabClick} />
                     </div>
+                    */}
 
                     {/* Close Button */}
                     <button
