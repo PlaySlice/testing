@@ -40,8 +40,7 @@ export function usePromptEnhancer() {
       body: JSON.stringify(requestBody),
     });
 
-    console.log('Response: ', response);
-
+    console.log('Response: ', response.body);
 
     const reader = response.body?.getReader();
 
@@ -58,12 +57,12 @@ export function usePromptEnhancer() {
 
         while (true) {
           const { value, done } = await reader.read();
-
           if (done) {
             break;
           }
 
           _input += decoder.decode(value);
+          console.log('Value: ', _input);
 
           logger.trace('Set input', _input);
 
