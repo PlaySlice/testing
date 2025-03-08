@@ -86,11 +86,11 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ provider, apiKey, 
   };
 
   return (
-/*     <div className="flex items-center justify-between py-3 px-1">
+    <div className="flex items-center justify-between py-3 px-1">
       <div className="flex items-center gap-2 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-bolt-elements-textSecondary">{provider?.name} API Key:</span>
-          {!isEditing && (
+  {/*         {!isEditing && (
             <div className="flex items-center gap-2">
               {apiKey ? (
                 <>
@@ -109,7 +109,7 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ provider, apiKey, 
                 </>
               )}
             </div>
-          )}
+          )} */}
         </div>
       </div>
 
@@ -164,6 +164,6 @@ export const APIKeyManager: React.FC<APIKeyManagerProps> = ({ provider, apiKey, 
           </>
         )}
       </div>
-    </div> */
+    </div>
   );
 };
