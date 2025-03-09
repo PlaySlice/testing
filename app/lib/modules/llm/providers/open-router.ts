@@ -28,17 +28,17 @@ export default class OpenRouterProvider extends BaseProvider {
 
   staticModels: ModelInfo[] = [
     {
-      name: 'deepseek/deepseek-r1-zero:free',
-      label: 'deepseek-r1-zero',
+      name: 'deepseek/deepseek-r1-distill-qwen-32b',
+      label: 'deepseek-r1',
       provider: 'OpenRouter',
       maxTokenAllowed: 8000,
     },
-    {
+/*     {
       name: 'qwen/qwq-32b:free',
       label: 'Qwen',
       provider: 'OpenRouter',
       maxTokenAllowed: 8000,
-    },
+    }, */
 /*     {
       name: 'qwen/qwen-2.5-coder-32b-instruct:free',
       label: 'Qwen Coder 2.5',
