@@ -28,24 +28,24 @@ export default class OpenRouterProvider extends BaseProvider {
 
   staticModels: ModelInfo[] = [
     {
-      name: 'anthropic/claude-3.5-sonnet',
-      label: 'Anthropic: Claude 3.5 Sonnet (OpenRouter)',
+      name: 'deepseek/deepseek-r1-zero:free',
+      label: 'deepseek-r1-zero',
       provider: 'OpenRouter',
       maxTokenAllowed: 8000,
     },
     {
-      name: 'anthropic/claude-3-haiku',
-      label: 'Anthropic: Claude 3 Haiku (OpenRouter)',
+      name: 'qwen/qwq-32b:free',
+      label: 'Qwen',
       provider: 'OpenRouter',
       maxTokenAllowed: 8000,
     },
     {
-      name: 'deepseek/deepseek-coder',
-      label: 'Deepseek-Coder V2 236B (OpenRouter)',
+      name: 'qwen/qwen-2.5-coder-32b-instruct:free',
+      label: 'Qwen Coder 2.5',
       provider: 'OpenRouter',
       maxTokenAllowed: 8000,
     },
-    {
+    /* {
       name: 'google/gemini-flash-1.5',
       label: 'Google Gemini Flash 1.5 (OpenRouter)',
       provider: 'OpenRouter',
@@ -70,7 +70,7 @@ export default class OpenRouterProvider extends BaseProvider {
       provider: 'OpenRouter',
       maxTokenAllowed: 8000,
     },
-    { name: 'cohere/command', label: 'Cohere Command (OpenRouter)', provider: 'OpenRouter', maxTokenAllowed: 4096 },
+    { name: 'cohere/command', label: 'Cohere Command (OpenRouter)', provider: 'OpenRouter', maxTokenAllowed: 4096 }, */
   ];
 
   async getDynamicModels(
@@ -86,7 +86,7 @@ export default class OpenRouterProvider extends BaseProvider {
       });
 
       const data = (await response.json()) as OpenRouterModelsResponse;
-
+      return []
       return data.data
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((m) => ({
