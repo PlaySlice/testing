@@ -39,12 +39,12 @@ export default class OpenRouterProvider extends BaseProvider {
       provider: 'OpenRouter',
       maxTokenAllowed: 8000,
     },
-    {
+/*     {
       name: 'qwen/qwen-2.5-coder-32b-instruct:free',
       label: 'Qwen Coder 2.5',
       provider: 'OpenRouter',
       maxTokenAllowed: 8000,
-    },
+    }, */
     /* {
       name: 'google/gemini-flash-1.5',
       label: 'Google Gemini Flash 1.5 (OpenRouter)',
