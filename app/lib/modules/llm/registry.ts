@@ -26,8 +26,8 @@ export {
    HuggingFaceProvider,
   HyperbolicProvider, */
   MistralProvider,
- /*  OllamaProvider,
-  OpenAIProvider, */
+   OllamaProvider,
+ /* OpenAIProvider, */
   OpenRouterProvider,
  /*  OpenAILikeProvider,
   PerplexityProvider,
