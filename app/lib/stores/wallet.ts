@@ -53,7 +53,8 @@ export const TIER_MODEL_ACCESS = {
     'OpenRouter',
     'Perplexity',
     'Together',
-    'xAI',
+    'xAI'
+    'ollama',
   ],
 };
 
