@@ -29,7 +29,7 @@ const StarterTemplates: React.FC = () => {
     );
   }, []);
 
-  return (
+  return null(
     <div className="flex flex-col items-center gap-4">
       <span className="text-sm text-gray-500">or start a blank app with your favorite stack</span>
       <div className="flex justify-center">
