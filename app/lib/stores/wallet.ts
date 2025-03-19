@@ -54,7 +54,7 @@ export const TIER_MODEL_ACCESS = {
     'Perplexity',
     'Together',
     'xAI',
-    'ollama',
+    'Ollama',
   ],
 };
 

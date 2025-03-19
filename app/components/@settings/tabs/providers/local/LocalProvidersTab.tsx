@@ -237,7 +237,7 @@ export default function LocalProvidersTab() {
   const handleToggleCategory = useCallback(
     async (enabled: boolean) => {
       filteredProviders.forEach((provider) => {
-        updateProviderSettings(provider.name, { ...provider.settings, enabled });
+        updateProviderSettings(provider.name, { ...provider.settings, enabled:true });
       });
       toast(enabled ? 'All local providers enabled' : 'All local providers disabled');
     },
